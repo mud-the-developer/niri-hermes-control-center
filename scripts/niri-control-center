@@ -2,6 +2,8 @@
 set -euo pipefail
 
 BIN_DIR="${NIRI_CONTROL_BIN_DIR:-$HOME/.local/bin}"
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/niri-control-center"
+CONFIG_FILE="$CONFIG_DIR/config"
 
 if [[ "${1:-}" == "--self-test" ]]; then
   command -v wofi >/dev/null
@@ -14,6 +16,134 @@ if [[ "${1:-}" == "--self-test" ]]; then
   test -x "$BIN_DIR/niri-wallpaper-shuffle"
   exit 0
 fi
+
+config_language() {
+  if [[ -f "$CONFIG_FILE" ]]; then
+    # shellcheck source=/dev/null
+    . "$CONFIG_FILE" 2>/dev/null || true
+  fi
+  printf '%s\n' "${language:-auto}"
+}
+
+system_language() {
+  local raw="${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}"
+  case "$raw" in
+    ko*|KO*) printf 'ko\n' ;;
+    *) printf 'en\n' ;;
+  esac
+}
+
+active_language() {
+  local configured
+  configured="$(config_language)"
+  case "$configured" in
+    ko|en) printf '%s\n' "$configured" ;;
+    *) system_language ;;
+  esac
+}
+
+write_language() {
+  local value="$1"
+  mkdir -p "$CONFIG_DIR"
+  printf 'language=%s\n' "$value" > "$CONFIG_FILE"
+}
+
+LANGUAGE="$(active_language)"
+
+tr() {
+  local key="$1"
+  case "$LANGUAGE:$key" in
+    ko:prompt) printf 'Niri 제어 · 앱 이름을 바로 입력해도 됩니다' ;;
+    ko:launch_app) printf '앱 실행' ;;
+    ko:hermes) printf 'Hermes Agent' ;;
+    ko:scratch) printf '스크래치 터미널' ;;
+    ko:hud) printf '창 HUD' ;;
+    ko:wallpaper) printf '배경화면 전환' ;;
+    ko:power_menu) printf '전원 / 세션 메뉴' ;;
+    ko:overview) printf '오버뷰 켜기/끄기' ;;
+    ko:transition) printf '시네마틱 화면 전환' ;;
+    ko:cheatsheet) printf '단축키 오버레이' ;;
+    ko:opacity) printf '창 투명도 규칙 토글' ;;
+    ko:floating) printf '플로팅 / 타일링 토글' ;;
+    ko:focus_floating) printf '플로팅 레이어 포커스' ;;
+    ko:focus_tiling) printf '타일링 레이어 포커스' ;;
+    ko:move_floating) printf '창을 플로팅으로 이동' ;;
+    ko:move_tiling) printf '창을 타일링으로 이동' ;;
+    ko:switch_focus) printf '플로팅 ↔ 타일링 포커스 전환' ;;
+    ko:tabbed) printf '탭 컬럼 토글' ;;
+    ko:max_column) printf '컬럼 최대화' ;;
+    ko:max_window) printf '창을 화면 가장자리까지 최대화' ;;
+    ko:center_window) printf '창 가운데 정렬' ;;
+    ko:center_columns) printf '보이는 컬럼 가운데 정렬' ;;
+    ko:consume_left) printf '왼쪽 창 흡수 / 배출' ;;
+    ko:consume_right) printf '오른쪽 창 흡수 / 배출' ;;
+    ko:expel) printf '컬럼에서 창 배출' ;;
+    ko:cast_window) printf '캐스트 대상: 현재 창' ;;
+    ko:cast_monitor) printf '캐스트 대상: 현재 모니터' ;;
+    ko:clear_cast) printf '캐스트 대상 지우기' ;;
+    ko:stop_cast) printf '스크린캐스트 중지' ;;
+    ko:switch_keyboard) printf '키보드 레이아웃 전환' ;;
+    ko:screenshot) printf '스크린샷 UI' ;;
+    ko:quick_status) printf '빠른 상태를 터미널에서 보기' ;;
+    ko:reload) printf 'Niri 설정 다시 불러오기' ;;
+    ko:language) printf '언어 설정' ;;
+    ko:monitors_off) printf '모니터 전원 끄기' ;;
+    ko:app_prompt) printf '앱 실행' ;;
+    ko:language_prompt) printf '언어 / Language' ;;
+    ko:auto_lang) printf '자동: 시스템 언어 따라가기' ;;
+    ko:korean) printf '한국어' ;;
+    ko:english) printf 'English' ;;
+    ko:language_saved) printf '언어 설정 저장됨' ;;
+    ko:auto_saved) printf '시스템 언어를 자동으로 따릅니다' ;;
+    ko:unknown_search) printf '앱 검색' ;;
+    ko:unknown_body) printf '입력한 이름으로 앱 런처를 엽니다' ;;
+    en:prompt) printf 'Niri Control · type an app name directly' ;;
+    en:launch_app) printf 'Launch app' ;;
+    en:hermes) printf 'Hermes Agent' ;;
+    en:scratch) printf 'Scratch terminal' ;;
+    en:hud) printf 'Window HUD' ;;
+    en:wallpaper) printf 'Wallpaper transition' ;;
+    en:power_menu) printf 'Power / session menu' ;;
+    en:overview) printf 'Overview: toggle overview' ;;
+    en:transition) printf 'Cinematic transition' ;;
+    en:cheatsheet) printf 'Cheatsheet / hotkey overlay' ;;
+    en:opacity) printf 'Toggle window opacity rule' ;;
+    en:floating) printf 'Toggle floating / tiling' ;;
+    en:focus_floating) printf 'Focus floating layer' ;;
+    en:focus_tiling) printf 'Focus tiling layer' ;;
+    en:move_floating) printf 'Move window to floating' ;;
+    en:move_tiling) printf 'Move window to tiling' ;;
+    en:switch_focus) printf 'Switch focus floating ↔ tiling' ;;
+    en:tabbed) printf 'Toggle tabbed column' ;;
+    en:max_column) printf 'Maximize column' ;;
+    en:max_window) printf 'Maximize window to edges' ;;
+    en:center_window) printf 'Center window' ;;
+    en:center_columns) printf 'Center visible columns' ;;
+    en:consume_left) printf 'Consume / expel left' ;;
+    en:consume_right) printf 'Consume / expel right' ;;
+    en:expel) printf 'Expel window from column' ;;
+    en:cast_window) printf 'Set cast target: focused window' ;;
+    en:cast_monitor) printf 'Set cast target: focused monitor' ;;
+    en:clear_cast) printf 'Clear cast target' ;;
+    en:stop_cast) printf 'Stop screencast' ;;
+    en:switch_keyboard) printf 'Switch keyboard layout' ;;
+    en:screenshot) printf 'Screenshot UI' ;;
+    en:quick_status) printf 'Quick status in terminal' ;;
+    en:reload) printf 'Reload Niri config' ;;
+    en:language) printf 'Language' ;;
+    en:monitors_off) printf 'Power off monitors' ;;
+    en:app_prompt) printf 'Launch app' ;;
+    en:language_prompt) printf 'Language / 언어' ;;
+    en:auto_lang) printf 'Auto: follow system language' ;;
+    en:korean) printf '한국어' ;;
+    en:english) printf 'English' ;;
+    en:language_saved) printf 'Language saved' ;;
+    en:auto_saved) printf 'Following the system language automatically' ;;
+    en:unknown_search) printf 'App search' ;;
+    en:unknown_body) printf 'Opening the app launcher with your search text' ;;
+    *) printf '%s' "$key" ;;
+  esac
+}
 
 notify() {
   if command -v notify-send >/dev/null 2>&1; then
@@ -48,7 +178,7 @@ show_info() {
 
 launch_app() {
   wofi --show drun \
-    --prompt "Launch app" \
+    --prompt "$(tr app_prompt)" \
     --width 760 \
     --height 620 \
     --lines 16 \
@@ -57,75 +187,110 @@ launch_app() {
     --allow-images >/dev/null 2>&1 &
 }
 
-choice="$(cat <<'MENU' | wofi --dmenu --prompt 'Niri Control' --width 760 --height 660 --lines 20 --insensitive --gtk-dark --no-custom-entry
-󰀻  Launch app
-󰚩  Hermes Agent
-󰆍  Scratch terminal
-󰋼  Window HUD
-󰸉  Wallpaper transition
-󰐥  Power / session menu
-󰈈  Overview: toggle overview
-󰐊  Cinematic transition
-󰌾  Cheatsheet / hotkey overlay
-󰆾  Toggle window opacity rule
-󰉈  Toggle floating / tiling
-󰹑  Focus floating layer
-󰹒  Focus tiling layer
-󰜺  Move window to floating
-󰜻  Move window to tiling
-󰹕  Switch focus floating ↔ tiling
-󰘖  Toggle tabbed column
-󰹖  Maximize column
-󰹗  Maximize window to edges
-󰹘  Center window
-󰹙  Center visible columns
-󰁌  Consume / expel left
-󰁔  Consume / expel right
-󰹚  Expel window from column
-󰔬  Set cast target: focused window
-󰔭  Set cast target: focused monitor
-󰅖  Clear cast target
-󰓛  Stop screencast
-󰌌  Switch keyboard layout
-󰍹  Screenshot UI
-󰹛  Quick status in terminal
-󰑐  Reload Niri config
-⏻  Power off monitors
+launch_app_search() {
+  local query="$1"
+  wofi --show drun \
+    --prompt "$(tr app_prompt)" \
+    --search "$query" \
+    --width 760 \
+    --height 620 \
+    --lines 16 \
+    --insensitive \
+    --gtk-dark \
+    --allow-images >/dev/null 2>&1 &
+}
+
+language_menu() {
+  local choice
+  choice="$(printf '%s\n%s\n%s\n' "$(tr auto_lang)" "$(tr korean)" "$(tr english)" | \
+    wofi --dmenu --prompt "$(tr language_prompt)" --width 560 --height 230 --lines 3 --insensitive --gtk-dark --no-custom-entry)" || return 0
+  case "$choice" in
+    *"Auto"*|*"자동"*) write_language auto; notify "$(tr language_saved)" "$(tr auto_saved)" ;;
+    *"한국어"*) write_language ko; notify "$(tr language_saved)" "한국어" ;;
+    *"English"*) write_language en; notify "$(tr language_saved)" "English" ;;
+  esac
+}
+
+menu_items() {
+  cat <<MENU
+󰀻  $(tr launch_app)
+󰚩  $(tr hermes)
+󰆍  $(tr scratch)
+󰋼  $(tr hud)
+󰸉  $(tr wallpaper)
+󰐥  $(tr power_menu)
+󰈈  $(tr overview)
+󰐊  $(tr transition)
+󰌾  $(tr cheatsheet)
+󰆾  $(tr opacity)
+󰉈  $(tr floating)
+󰹑  $(tr focus_floating)
+󰹒  $(tr focus_tiling)
+󰜺  $(tr move_floating)
+󰜻  $(tr move_tiling)
+󰹕  $(tr switch_focus)
+󰘖  $(tr tabbed)
+󰹖  $(tr max_column)
+󰹗  $(tr max_window)
+󰹘  $(tr center_window)
+󰹙  $(tr center_columns)
+󰁌  $(tr consume_left)
+󰁔  $(tr consume_right)
+󰹚  $(tr expel)
+󰔬  $(tr cast_window)
+󰔭  $(tr cast_monitor)
+󰅖  $(tr clear_cast)
+󰓛  $(tr stop_cast)
+󰌌  $(tr switch_keyboard)
+󰍹  $(tr screenshot)
+󰹛  $(tr quick_status)
+󰑐  $(tr reload)
+󰅶  $(tr language)
+⏻  $(tr monitors_off)
 MENU
-)" || exit 0
+}
+
+choice="$(menu_items | wofi --dmenu --prompt "$(tr prompt)" --width 820 --height 700 --lines 22 --insensitive --gtk-dark)" || exit 0
 
 case "$choice" in
-  *"Launch app"*) launch_app ;;
-  *"Hermes Agent"*) "$BIN_DIR/niri-hermes-menu" ;;
-  *"Scratch terminal"*) "$BIN_DIR/niri-scratch-terminal" ;;
-  *"Window HUD"*) "$BIN_DIR/niri-window-hud" ;;
-  *"Wallpaper transition"*) "$BIN_DIR/niri-wallpaper-shuffle" ;;
-  *"Power / session"*) "$BIN_DIR/niri-power-menu" ;;
-  *"Overview"*) run_action "Overview toggled" toggle-overview ;;
-  *"Cinematic transition"*) run_action "Cinematic transition" do-screen-transition --delay-ms 140 ;;
-  *"Cheatsheet"*) run_action "Hotkey overlay" show-hotkey-overlay ;;
-  *"Toggle window opacity"*) run_action "Window opacity rule toggled" toggle-window-rule-opacity ;;
-  *"Toggle floating"*) run_action "Floating toggled" toggle-window-floating ;;
-  *"Focus floating"*) run_action "Focused floating layer" focus-floating ;;
-  *"Focus tiling"*) run_action "Focused tiling layer" focus-tiling ;;
-  *"Move window to floating"*) run_action "Window moved to floating" move-window-to-floating ;;
-  *"Move window to tiling"*) run_action "Window moved to tiling" move-window-to-tiling ;;
-  *"Switch focus floating"*) run_action "Focus switched" switch-focus-between-floating-and-tiling ;;
-  *"Toggle tabbed"*) run_action "Tabbed column toggled" toggle-column-tabbed-display ;;
-  *"Maximize column"*) run_action "Column maximized toggled" maximize-column ;;
-  *"Maximize window"*) run_action "Window maximized-to-edges toggled" maximize-window-to-edges ;;
-  *"Center window"*) run_action "Window centered" center-window ;;
-  *"Center visible"*) run_action "Visible columns centered" center-visible-columns ;;
-  *"Consume / expel left"*) run_action "Consume/expel left" consume-or-expel-window-left ;;
-  *"Consume / expel right"*) run_action "Consume/expel right" consume-or-expel-window-right ;;
-  *"Expel window"*) run_action "Window expelled from column" expel-window-from-column ;;
-  *"focused window"*) run_action "Cast target: focused window" set-dynamic-cast-window ;;
-  *"focused monitor"*) run_action "Cast target: focused monitor" set-dynamic-cast-monitor ;;
-  *"Clear cast"*) run_action "Cast target cleared" clear-dynamic-cast-target ;;
-  *"Stop screencast"*) run_action "Screencast stopped" stop-cast ;;
-  *"Switch keyboard"*) run_action "Keyboard layout switched" switch-layout ;;
-  *"Screenshot UI"*) run_action "Screenshot UI" screenshot ;;
-  *"Quick status"*) show_info ;;
-  *"Reload Niri"*) run_action "Niri config reloaded" load-config-file ;;
-  *"Power off"*) run_action "Powering off monitors" power-off-monitors ;;
+  *"$(tr launch_app)"*) launch_app ;;
+  *"$(tr hermes)"*) "$BIN_DIR/niri-hermes-menu" ;;
+  *"$(tr scratch)"*) "$BIN_DIR/niri-scratch-terminal" ;;
+  *"$(tr hud)"*) "$BIN_DIR/niri-window-hud" ;;
+  *"$(tr wallpaper)"*) "$BIN_DIR/niri-wallpaper-shuffle" ;;
+  *"$(tr power_menu)"*) "$BIN_DIR/niri-power-menu" ;;
+  *"$(tr overview)"*) run_action "$(tr overview)" toggle-overview ;;
+  *"$(tr transition)"*) run_action "$(tr transition)" do-screen-transition --delay-ms 140 ;;
+  *"$(tr cheatsheet)"*) run_action "$(tr cheatsheet)" show-hotkey-overlay ;;
+  *"$(tr opacity)"*) run_action "$(tr opacity)" toggle-window-rule-opacity ;;
+  *"$(tr floating)"*) run_action "$(tr floating)" toggle-window-floating ;;
+  *"$(tr focus_floating)"*) run_action "$(tr focus_floating)" focus-floating ;;
+  *"$(tr focus_tiling)"*) run_action "$(tr focus_tiling)" focus-tiling ;;
+  *"$(tr move_floating)"*) run_action "$(tr move_floating)" move-window-to-floating ;;
+  *"$(tr move_tiling)"*) run_action "$(tr move_tiling)" move-window-to-tiling ;;
+  *"$(tr switch_focus)"*) run_action "$(tr switch_focus)" switch-focus-between-floating-and-tiling ;;
+  *"$(tr tabbed)"*) run_action "$(tr tabbed)" toggle-column-tabbed-display ;;
+  *"$(tr max_column)"*) run_action "$(tr max_column)" maximize-column ;;
+  *"$(tr max_window)"*) run_action "$(tr max_window)" maximize-window-to-edges ;;
+  *"$(tr center_window)"*) run_action "$(tr center_window)" center-window ;;
+  *"$(tr center_columns)"*) run_action "$(tr center_columns)" center-visible-columns ;;
+  *"$(tr consume_left)"*) run_action "$(tr consume_left)" consume-or-expel-window-left ;;
+  *"$(tr consume_right)"*) run_action "$(tr consume_right)" consume-or-expel-window-right ;;
+  *"$(tr expel)"*) run_action "$(tr expel)" expel-window-from-column ;;
+  *"$(tr cast_window)"*) run_action "$(tr cast_window)" set-dynamic-cast-window ;;
+  *"$(tr cast_monitor)"*) run_action "$(tr cast_monitor)" set-dynamic-cast-monitor ;;
+  *"$(tr clear_cast)"*) run_action "$(tr clear_cast)" clear-dynamic-cast-target ;;
+  *"$(tr stop_cast)"*) run_action "$(tr stop_cast)" stop-cast ;;
+  *"$(tr switch_keyboard)"*) run_action "$(tr switch_keyboard)" switch-layout ;;
+  *"$(tr screenshot)"*) run_action "$(tr screenshot)" screenshot ;;
+  *"$(tr quick_status)"*) show_info ;;
+  *"$(tr reload)"*) run_action "$(tr reload)" load-config-file ;;
+  *"$(tr language)"*) language_menu ;;
+  *"$(tr monitors_off)"*) run_action "$(tr monitors_off)" power-off-monitors ;;
+  *)
+    if [[ -n "$choice" ]]; then
+      notify "$(tr unknown_search)" "$(tr unknown_body): $choice"
+      launch_app_search "$choice"
+    fi
+    ;;
 esac

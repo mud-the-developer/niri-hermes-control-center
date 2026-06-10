@@ -8,6 +8,8 @@ Built on a CachyOS + Niri + Rio setup, but the scripts are intentionally plain B
 
 - `ALT+SPACE` Niri Control Center via Wofi
 - Existing app launching from the Control Center via `Launch app` (`wofi --show drun`)
+- Spotlight-style app search: type an app name directly in `ALT+SPACE`; unknown text opens `wofi --show drun --search <text>`
+- Localized Control Center labels with `auto`, `ko`, and `en` language modes
 - Hermes Agent submenu:
   - open interactive `hermes --tui chat` in a real terminal/PTY
   - ask Niri-native one-shot prompts with Wofi + `hermes chat -q`
@@ -114,6 +116,25 @@ Screenshots are not committed by default. Drop your own into `assets/` if you wa
 - It does not automatically edit your Niri config.
 - Power menu asks for confirmation before logout, suspend, reboot, or shutdown.
 - No secrets are stored by these scripts.
+
+## Language and app search
+
+The Control Center follows the system language by default and can also be pinned manually:
+
+```bash
+mkdir -p ~/.config/niri-control-center
+printf 'language=auto\n' > ~/.config/niri-control-center/config  # follow LANG/LC_MESSAGES
+printf 'language=ko\n'   > ~/.config/niri-control-center/config  # 한국어
+printf 'language=en\n'   > ~/.config/niri-control-center/config  # English
+```
+
+You can also change this from `ALT+SPACE` → `Language` / `언어 설정`.
+
+For app launching, either choose `Launch app` or type an app name directly in `ALT+SPACE`. If the text does not match a Control Center action, the app launcher opens with that text pre-filled:
+
+```bash
+wofi --show drun --search firefox
+```
 
 ## Completion notifications
 
