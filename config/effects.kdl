@@ -1,0 +1,87 @@
+# Niri window/layer effects
+# Paste these top-level snippets into your Niri config, outside `binds { ... }`.
+
+blur {
+    passes 3
+    offset 3.0
+    noise 0.018
+    saturation 1.45
+}
+
+overview {
+    zoom 0.46
+    backdrop-color "#02060acc"
+
+    workspace-shadow {
+        softness 48
+        spread 10
+        offset x=0 y=12
+        color "#00000075"
+    }
+}
+
+window-rule {
+    match app-id=r#"^niri-scratch-rio$"#
+    open-floating true
+    open-focused true
+    default-column-width { proportion 0.42; }
+    default-window-height { proportion 0.42; }
+    default-floating-position x=28 y=28 relative-to="bottom-right"
+    opacity 0.94
+    geometry-corner-radius 20
+    clip-to-geometry true
+    shadow {
+        on
+        softness 46
+        spread 6
+        offset x=0 y=10
+        draw-behind-window true
+        color "#00000085"
+    }
+    background-effect {
+        xray true
+        blur true
+        noise 0.018
+        saturation 1.60
+    }
+}
+
+window-rule {
+    match app-id=r#"^(rio|Rio|Alacritty|alacritty|com\.mitchellh\.ghostty|niri-hermes-rio|niri-status-rio)$"#
+    draw-border-with-background false
+    geometry-corner-radius 18
+    clip-to-geometry true
+    background-effect {
+        xray true
+        blur true
+        noise 0.018
+        saturation 1.55
+    }
+}
+
+window-rule {
+    match is-focused=false
+    opacity 0.965
+}
+
+layer-rule {
+    match namespace=r#"^waybar$"#
+    match namespace=r#"^wofi$"#
+
+    shadow {
+        on
+        softness 42
+        spread 5
+        offset x=0 y=8
+        draw-behind-window true
+        color "#00000070"
+    }
+
+    geometry-corner-radius 22
+    background-effect {
+        xray true
+        blur true
+        noise 0.018
+        saturation 1.55
+    }
+}

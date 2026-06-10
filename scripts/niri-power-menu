@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+notify() { command -v notify-send >/dev/null 2>&1 && notify-send -a "Niri Power" "$1" "${2:-}" >/dev/null 2>&1 || true; }
+
+choice="$(cat <<'MENU' | wofi --dmenu --prompt 'Power / Session' --width 520 --height 360 --lines 8 --insensitive --gtk-dark --no-custom-entry
+󰌾  Lock screen
+󰍃  Logout Niri
+󰤄  Suspend
+󰐥  Power off monitors
+󰜉  Reboot
+⏻  Shutdown
+MENU
+)" || exit 0
+
+confirm_destructive() {
+  local label="$1" ans
+  ans="$(printf 'No\nYes, %s\n' "$label" | wofi --dmenu --prompt "Confirm $label" --width 420 --height 160 --lines 2 --gtk-dark --no-custom-entry)" || exit 0
+  [[ "$ans" == Yes,* ]]
+}
+
+case "$choice" in
+  *"Lock"*) swaylock >/dev/null 2>&1 & notify "Lock" ;;
+  *"Logout"*) confirm_destructive "logout" && niri msg action quit ;;
+  *"Suspend"*) confirm_destructive "suspend" && systemctl suspend ;;
+  *"Power off monitors"*) niri msg action power-off-monitors; notify "Monitors powered off" ;;
+  *"Reboot"*) confirm_destructive "reboot" && systemctl reboot ;;
+  *"Shutdown"*) confirm_destructive "shutdown" && systemctl poweroff ;;
+esac

@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BIN_DIR="${NIRI_CONTROL_BIN_DIR:-$HOME/.local/bin}"
+
+if [[ "${1:-}" == "--self-test" ]]; then
+  command -v wofi >/dev/null
+  command -v niri >/dev/null
+  test -x "$BIN_DIR/niri-hermes-menu"
+  test -x "$BIN_DIR/niri-scratch-terminal"
+  test -x "$BIN_DIR/niri-window-hud"
+  test -x "$BIN_DIR/niri-power-menu"
+  test -x "$BIN_DIR/niri-wallpaper-shuffle"
+  exit 0
+fi
+
+notify() {
+  command -v notify-send >/dev/null 2>&1 && notify-send -a "Niri Control" "$1" "${2:-}" >/dev/null 2>&1 || true
+}
+
+run_action() {
+  local label="$1"
+  shift
+  niri msg action "$@"
+  notify "$label" "niri msg action $*"
+}
+
+show_info() {
+  local tmp
+  tmp="$(mktemp)"
+  {
+    printf 'Niri quick status\n\n'
+    niri msg outputs 2>/dev/null | sed -n '1,120p'
+    printf '\n--- Focused Window ---\n'
+    niri msg focused-window 2>/dev/null || true
+    printf '\n--- Layers ---\n'
+    niri msg layers 2>/dev/null | grep -E 'Output |Namespace|Background layer|Top layer|Overlay layer|Bottom layer' | sed -n '1,120p' || true
+  } > "$tmp"
+  if command -v rio >/dev/null 2>&1; then
+    rio --app-id niri-status-rio --title-placeholder "Niri Status" -e sh -c "less -R '$tmp'; rm -f '$tmp'" >/dev/null 2>&1 &
+  else
+    ${TERMINAL:-xterm} -e sh -c "less -R '$tmp'; rm -f '$tmp'" >/dev/null 2>&1 &
+  fi
+}
+
+choice="$(cat <<'MENU' | wofi --dmenu --prompt 'Niri Control' --width 760 --height 660 --lines 20 --insensitive --gtk-dark --no-custom-entry
+󰚩  Hermes Agent
+󰆍  Scratch terminal
+󰋼  Window HUD
+󰸉  Wallpaper transition
+󰐥  Power / session menu
+󰈈  Overview: toggle overview
+󰐊  Cinematic transition
+󰌾  Cheatsheet / hotkey overlay
+󰆾  Toggle window opacity rule
+󰉈  Toggle floating / tiling
+󰹑  Focus floating layer
+󰹒  Focus tiling layer
+󰜺  Move window to floating
+󰜻  Move window to tiling
+󰹕  Switch focus floating ↔ tiling
+󰘖  Toggle tabbed column
+󰹖  Maximize column
+󰹗  Maximize window to edges
+󰹘  Center window
+󰹙  Center visible columns
+󰁌  Consume / expel left
+󰁔  Consume / expel right
+󰹚  Expel window from column
+󰔬  Set cast target: focused window
+󰔭  Set cast target: focused monitor
+󰅖  Clear cast target
+󰓛  Stop screencast
+󰌌  Switch keyboard layout
+󰍹  Screenshot UI
+󰹛  Quick status in terminal
+󰑐  Reload Niri config
+⏻  Power off monitors
+MENU
+)" || exit 0
+
+case "$choice" in
+  *"Hermes Agent"*) "$BIN_DIR/niri-hermes-menu" ;;
+  *"Scratch terminal"*) "$BIN_DIR/niri-scratch-terminal" ;;
+  *"Window HUD"*) "$BIN_DIR/niri-window-hud" ;;
+  *"Wallpaper transition"*) "$BIN_DIR/niri-wallpaper-shuffle" ;;
+  *"Power / session"*) "$BIN_DIR/niri-power-menu" ;;
+  *"Overview"*) run_action "Overview toggled" toggle-overview ;;
+  *"Cinematic transition"*) run_action "Cinematic transition" do-screen-transition --delay-ms 140 ;;
+  *"Cheatsheet"*) run_action "Hotkey overlay" show-hotkey-overlay ;;
+  *"Toggle window opacity"*) run_action "Window opacity rule toggled" toggle-window-rule-opacity ;;
+  *"Toggle floating"*) run_action "Floating toggled" toggle-window-floating ;;
+  *"Focus floating"*) run_action "Focused floating layer" focus-floating ;;
+  *"Focus tiling"*) run_action "Focused tiling layer" focus-tiling ;;
+  *"Move window to floating"*) run_action "Window moved to floating" move-window-to-floating ;;
+  *"Move window to tiling"*) run_action "Window moved to tiling" move-window-to-tiling ;;
+  *"Switch focus floating"*) run_action "Focus switched" switch-focus-between-floating-and-tiling ;;
+  *"Toggle tabbed"*) run_action "Tabbed column toggled" toggle-column-tabbed-display ;;
+  *"Maximize column"*) run_action "Column maximized toggled" maximize-column ;;
+  *"Maximize window"*) run_action "Window maximized-to-edges toggled" maximize-window-to-edges ;;
+  *"Center window"*) run_action "Window centered" center-window ;;
+  *"Center visible"*) run_action "Visible columns centered" center-visible-columns ;;
+  *"Consume / expel left"*) run_action "Consume/expel left" consume-or-expel-window-left ;;
+  *"Consume / expel right"*) run_action "Consume/expel right" consume-or-expel-window-right ;;
+  *"Expel window"*) run_action "Window expelled from column" expel-window-from-column ;;
+  *"focused window"*) run_action "Cast target: focused window" set-dynamic-cast-window ;;
+  *"focused monitor"*) run_action "Cast target: focused monitor" set-dynamic-cast-monitor ;;
+  *"Clear cast"*) run_action "Cast target cleared" clear-dynamic-cast-target ;;
+  *"Stop screencast"*) run_action "Screencast stopped" stop-cast ;;
+  *"Switch keyboard"*) run_action "Keyboard layout switched" switch-layout ;;
+  *"Screenshot UI"*) run_action "Screenshot UI" screenshot ;;
+  *"Quick status"*) show_info ;;
+  *"Reload Niri"*) run_action "Niri config reloaded" load-config-file ;;
+  *"Power off"*) run_action "Powering off monitors" power-off-monitors ;;
+esac

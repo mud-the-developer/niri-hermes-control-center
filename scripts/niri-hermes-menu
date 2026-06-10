@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+TERMINAL_CMD="${NIRI_HERMES_TERMINAL:-rio}"
+HERMES_CMD="${NIRI_HERMES_CMD:-hermes}"
+HERMES_RIO_APP_ID="${NIRI_HERMES_RIO_APP_ID:-niri-hermes-rio}"
+
+notify() {
+  command -v notify-send >/dev/null 2>&1 && notify-send -a "Niri Hermes" "$1" "${2:-}" >/dev/null 2>&1 || true
+}
+
+spawn_terminal() {
+  local title="$1"
+  shift
+  if [[ "$TERMINAL_CMD" == "rio" ]] && command -v rio >/dev/null 2>&1; then
+    rio --app-id "$HERMES_RIO_APP_ID" --title-placeholder "$title" -e "$@" >/dev/null 2>&1 &
+  else
+    "$TERMINAL_CMD" -e "$@" >/dev/null 2>&1 &
+  fi
+}
+
+ask_prompt() {
+  printf '' | wofi --dmenu --prompt "Ask Hermes" --width 760 --height 160 --lines 1 --exec-search --gtk-dark || true
+}
+
+choice="$(cat <<'MENU' | wofi --dmenu --prompt 'Hermes Agent' --width 680 --height 420 --lines 10 --insensitive --gtk-dark --no-custom-entry
+󰚩  Open interactive Hermes
+󰭹  Ask Hermes one-shot prompt
+󰈈  Ask Hermes about focused Niri window
+󰍹  Ask Hermes to explain screenshot workflow
+󰑐  Hermes status
+󰒲  Hermes doctor
+󰈙  Hermes sessions
+󰘳  Hermes skills
+MENU
+)" || exit 0
+
+case "$choice" in
+  *"interactive"*)
+    spawn_terminal "Hermes" "$HERMES_CMD"
+    notify "Hermes" "Interactive session opened"
+    ;;
+  *"one-shot"*)
+    prompt="$(ask_prompt)"
+    [[ -z "$prompt" ]] && exit 0
+    spawn_terminal "Hermes Ask" sh -lc "printf '%s\n\n' 'Hermes one-shot'; ${HERMES_CMD@Q} chat -q \"\$1\"; printf '\nPress Enter to close...'; read _" sh "$prompt"
+    notify "Hermes" "Question sent"
+    ;;
+  *"focused Niri window"*)
+    info="$(niri msg focused-window 2>/dev/null || true)"
+    [[ -z "$info" ]] && info="No focused window detected."
+    spawn_terminal "Hermes Window" sh -lc "printf '%s\n\n' 'Focused window context sent to Hermes'; ${HERMES_CMD@Q} chat -q \"Explain this Niri focused-window state and suggest useful next window-management action:\n\n\$1\"; printf '\nPress Enter to close...'; read _" sh "$info"
+    notify "Hermes" "Focused window sent"
+    ;;
+  *"screenshot workflow"*)
+    spawn_terminal "Hermes Screenshot" sh -lc "${HERMES_CMD@Q} chat -q 'For my Niri Wayland desktop, suggest a polished screenshot workflow using niri screenshot actions, grim, wl-copy, slurp/swappy if installed, and explain required packages.'; printf '\nPress Enter to close...'; read _"
+    ;;
+  *"Hermes status"*)
+    spawn_terminal "Hermes Status" sh -lc "${HERMES_CMD@Q} status --all 2>/dev/null || ${HERMES_CMD@Q} status; printf '\nPress Enter to close...'; read _"
+    ;;
+  *"Hermes doctor"*)
+    spawn_terminal "Hermes Doctor" sh -lc "${HERMES_CMD@Q} doctor; printf '\nPress Enter to close...'; read _"
+    ;;
+  *"sessions"*)
+    spawn_terminal "Hermes Sessions" sh -lc "${HERMES_CMD@Q} sessions list; printf '\nPress Enter to close...'; read _"
+    ;;
+  *"skills"*)
+    spawn_terminal "Hermes Skills" sh -lc "${HERMES_CMD@Q} skills list; printf '\nPress Enter to close...'; read _"
+    ;;
+esac

@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+notify() { command -v notify-send >/dev/null 2>&1 && notify-send -a "Niri Scratch" "$1" "${2:-}" >/dev/null 2>&1 || true; }
+
+APP_ID="${NIRI_SCRATCH_APP_ID:-niri-scratch-rio}"
+TERMINAL_CMD="${NIRI_SCRATCH_TERMINAL:-rio}"
+SHELL_CMD="${SHELL:-/bin/sh}"
+
+if pgrep -af "--app-id $APP_ID|--app-id=$APP_ID" >/dev/null 2>&1; then
+  niri msg action focus-floating || true
+  notify "Scratch terminal" "Already running; focused floating layer"
+  exit 0
+fi
+
+if [[ "$TERMINAL_CMD" == "rio" ]] && command -v rio >/dev/null 2>&1; then
+  rio --app-id "$APP_ID" --title-placeholder "Scratch Terminal" -e "$SHELL_CMD" -lc 'cd "$HOME"; printf "\\033[36m󰆍 Niri scratch terminal\\033[0m\n"; exec "${SHELL:-/bin/sh}"' >/dev/null 2>&1 &
+else
+  "$TERMINAL_CMD" -e "$SHELL_CMD" -lc 'cd "$HOME"; printf "Niri scratch terminal\n"; exec "${SHELL:-/bin/sh}"' >/dev/null 2>&1 &
+fi
+
+sleep 0.45
+niri msg action move-window-to-floating || true
+niri msg action center-window || true
+notify "Scratch terminal" "Spawned floating terminal"

@@ -1,0 +1,15 @@
+# Niri keybinds
+# Paste the relevant lines inside your existing `binds { ... }` block.
+
+MOD+SLASH          hotkey-overlay-title="Show Niri Cheatsheet" { show-hotkey-overlay; }
+ALT+SPACE          hotkey-overlay-title="Niri Control Center" { spawn-sh "~/.local/bin/niri-control-center"; }
+MOD+SHIFT+RETURN   hotkey-overlay-title="Scratch Terminal" { spawn-sh "~/.local/bin/niri-scratch-terminal"; }
+MOD+I              hotkey-overlay-title="Focused Window HUD" { spawn-sh "~/.local/bin/niri-window-hud"; }
+MOD+ALT+P          hotkey-overlay-title="Power / Session Menu" { spawn-sh "~/.local/bin/niri-power-menu"; }
+MOD+CTRL+W         hotkey-overlay-title="Wallpaper Transition" { spawn-sh "~/.local/bin/niri-wallpaper-shuffle"; }
+
+MOD+GRAVE          hotkey-overlay-title="Switch Focus Floating/Tiling" { switch-focus-between-floating-and-tiling; }
+MOD+SHIFT+T        hotkey-overlay-title="Move Window To Floating" { move-window-to-floating; }
+MOD+CTRL+T         hotkey-overlay-title="Move Window To Tiling" { move-window-to-tiling; }
+MOD+ALT+F          hotkey-overlay-title="Focus Floating Layer" { focus-floating; }
+MOD+ALT+T          hotkey-overlay-title="Focus Tiling Layer" { focus-tiling; }
