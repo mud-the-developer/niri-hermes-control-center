@@ -59,41 +59,41 @@ LANGUAGE="$(active_language)"
 i18n() {
   local key="$1"
   case "$LANGUAGE:$key" in
-    ko:prompt) printf 'Niri 제어 · 앱 이름을 바로 입력해도 됩니다' ;;
-    ko:launch_app) printf '앱 실행' ;;
-    ko:hermes) printf 'Hermes Agent' ;;
-    ko:scratch) printf '스크래치 터미널' ;;
-    ko:hud) printf '창 HUD' ;;
-    ko:wallpaper) printf '배경화면 전환' ;;
-    ko:power_menu) printf '전원 / 세션 메뉴' ;;
-    ko:overview) printf '오버뷰 켜기/끄기' ;;
-    ko:transition) printf '시네마틱 화면 전환' ;;
-    ko:cheatsheet) printf '단축키 오버레이' ;;
-    ko:opacity) printf '창 투명도 규칙 토글' ;;
-    ko:floating) printf '플로팅 / 타일링 토글' ;;
-    ko:focus_floating) printf '플로팅 레이어 포커스' ;;
-    ko:focus_tiling) printf '타일링 레이어 포커스' ;;
-    ko:move_floating) printf '창을 플로팅으로 이동' ;;
-    ko:move_tiling) printf '창을 타일링으로 이동' ;;
-    ko:switch_focus) printf '플로팅 ↔ 타일링 포커스 전환' ;;
-    ko:tabbed) printf '탭 컬럼 토글' ;;
-    ko:max_column) printf '컬럼 최대화' ;;
-    ko:max_window) printf '창을 화면 가장자리까지 최대화' ;;
-    ko:center_window) printf '창 가운데 정렬' ;;
-    ko:center_columns) printf '보이는 컬럼 가운데 정렬' ;;
-    ko:consume_left) printf '왼쪽 창 흡수 / 배출' ;;
-    ko:consume_right) printf '오른쪽 창 흡수 / 배출' ;;
-    ko:expel) printf '컬럼에서 창 배출' ;;
-    ko:cast_window) printf '캐스트 대상: 현재 창' ;;
-    ko:cast_monitor) printf '캐스트 대상: 현재 모니터' ;;
-    ko:clear_cast) printf '캐스트 대상 지우기' ;;
-    ko:stop_cast) printf '스크린캐스트 중지' ;;
-    ko:switch_keyboard) printf '키보드 레이아웃 전환' ;;
-    ko:screenshot) printf '스크린샷 UI' ;;
-    ko:quick_status) printf '빠른 상태를 터미널에서 보기' ;;
-    ko:reload) printf 'Niri 설정 다시 불러오기' ;;
-    ko:language) printf '언어 설정' ;;
-    ko:monitors_off) printf '모니터 전원 끄기' ;;
+    ko:prompt) printf 'Niri Command · 네이티브 액션, 앱, 에이전트' ;;
+    ko:launch_app) printf 'App · 앱 실행 / 검색' ;;
+    ko:hermes) printf 'AI · Hermes Agent' ;;
+    ko:scratch) printf 'Niri · 스크래치 터미널' ;;
+    ko:hud) printf 'Niri · 포커스 창 HUD' ;;
+    ko:wallpaper) printf 'Wayland · 배경화면 전환' ;;
+    ko:power_menu) printf 'System · 전원 / 세션 메뉴' ;;
+    ko:overview) printf 'Niri · 오버뷰 켜기/끄기' ;;
+    ko:transition) printf 'Niri · 시네마틱 화면 전환' ;;
+    ko:cheatsheet) printf 'Niri · 단축키 오버레이' ;;
+    ko:opacity) printf 'Niri · 창 투명도 규칙 토글' ;;
+    ko:floating) printf 'Niri · 플로팅 / 타일링 토글' ;;
+    ko:focus_floating) printf 'Niri · 플로팅 레이어 포커스' ;;
+    ko:focus_tiling) printf 'Niri · 타일링 레이어 포커스' ;;
+    ko:move_floating) printf 'Niri · 창을 플로팅으로 이동' ;;
+    ko:move_tiling) printf 'Niri · 창을 타일링으로 이동' ;;
+    ko:switch_focus) printf 'Niri · 플로팅 ↔ 타일링 포커스 전환' ;;
+    ko:tabbed) printf 'Niri · 탭 컬럼 토글' ;;
+    ko:max_column) printf 'Niri · 컬럼 최대화' ;;
+    ko:max_window) printf 'Niri · 창을 화면 가장자리까지 최대화' ;;
+    ko:center_window) printf 'Niri · 창 가운데 정렬' ;;
+    ko:center_columns) printf 'Niri · 보이는 컬럼 가운데 정렬' ;;
+    ko:consume_left) printf 'Niri · 왼쪽 창 흡수 / 배출' ;;
+    ko:consume_right) printf 'Niri · 오른쪽 창 흡수 / 배출' ;;
+    ko:expel) printf 'Niri · 컬럼에서 창 배출' ;;
+    ko:cast_window) printf 'Wayland · 캐스트 대상: 현재 창' ;;
+    ko:cast_monitor) printf 'Wayland · 캐스트 대상: 현재 모니터' ;;
+    ko:clear_cast) printf 'Wayland · 캐스트 대상 지우기' ;;
+    ko:stop_cast) printf 'Wayland · 스크린캐스트 중지' ;;
+    ko:switch_keyboard) printf 'Input · 키보드 레이아웃 전환' ;;
+    ko:screenshot) printf 'Wayland · 스크린샷 UI' ;;
+    ko:quick_status) printf 'Niri · 빠른 상태를 터미널에서 보기' ;;
+    ko:reload) printf 'Niri · 설정 다시 불러오기' ;;
+    ko:language) printf 'Control · 언어 설정' ;;
+    ko:monitors_off) printf 'System · 모니터 전원 끄기' ;;
     ko:app_prompt) printf '앱 실행' ;;
     ko:language_prompt) printf '언어 / Language' ;;
     ko:auto_lang) printf '자동: 시스템 언어 따라가기' ;;
@@ -103,41 +103,41 @@ i18n() {
     ko:auto_saved) printf '시스템 언어를 자동으로 따릅니다' ;;
     ko:unknown_search) printf '앱 검색' ;;
     ko:unknown_body) printf '입력한 이름으로 앱 런처를 엽니다' ;;
-    en:prompt) printf 'Niri Control · type an app name directly' ;;
-    en:launch_app) printf 'Launch app' ;;
-    en:hermes) printf 'Hermes Agent' ;;
-    en:scratch) printf 'Scratch terminal' ;;
-    en:hud) printf 'Window HUD' ;;
-    en:wallpaper) printf 'Wallpaper transition' ;;
-    en:power_menu) printf 'Power / session menu' ;;
-    en:overview) printf 'Overview: toggle overview' ;;
-    en:transition) printf 'Cinematic transition' ;;
-    en:cheatsheet) printf 'Cheatsheet / hotkey overlay' ;;
-    en:opacity) printf 'Toggle window opacity rule' ;;
-    en:floating) printf 'Toggle floating / tiling' ;;
-    en:focus_floating) printf 'Focus floating layer' ;;
-    en:focus_tiling) printf 'Focus tiling layer' ;;
-    en:move_floating) printf 'Move window to floating' ;;
-    en:move_tiling) printf 'Move window to tiling' ;;
-    en:switch_focus) printf 'Switch focus floating ↔ tiling' ;;
-    en:tabbed) printf 'Toggle tabbed column' ;;
-    en:max_column) printf 'Maximize column' ;;
-    en:max_window) printf 'Maximize window to edges' ;;
-    en:center_window) printf 'Center window' ;;
-    en:center_columns) printf 'Center visible columns' ;;
-    en:consume_left) printf 'Consume / expel left' ;;
-    en:consume_right) printf 'Consume / expel right' ;;
-    en:expel) printf 'Expel window from column' ;;
-    en:cast_window) printf 'Set cast target: focused window' ;;
-    en:cast_monitor) printf 'Set cast target: focused monitor' ;;
-    en:clear_cast) printf 'Clear cast target' ;;
-    en:stop_cast) printf 'Stop screencast' ;;
-    en:switch_keyboard) printf 'Switch keyboard layout' ;;
-    en:screenshot) printf 'Screenshot UI' ;;
-    en:quick_status) printf 'Quick status in terminal' ;;
-    en:reload) printf 'Reload Niri config' ;;
-    en:language) printf 'Language' ;;
-    en:monitors_off) printf 'Power off monitors' ;;
+    en:prompt) printf 'Niri Command · native actions, apps, agents' ;;
+    en:launch_app) printf 'App · Launch / search app' ;;
+    en:hermes) printf 'AI · Hermes Agent' ;;
+    en:scratch) printf 'Niri · Scratch terminal' ;;
+    en:hud) printf 'Niri · Focused window HUD' ;;
+    en:wallpaper) printf 'Wayland · Wallpaper transition' ;;
+    en:power_menu) printf 'System · Power / session menu' ;;
+    en:overview) printf 'Niri · Toggle overview' ;;
+    en:transition) printf 'Niri · Cinematic transition' ;;
+    en:cheatsheet) printf 'Niri · Hotkey overlay' ;;
+    en:opacity) printf 'Niri · Toggle window opacity rule' ;;
+    en:floating) printf 'Niri · Toggle floating / tiling' ;;
+    en:focus_floating) printf 'Niri · Focus floating layer' ;;
+    en:focus_tiling) printf 'Niri · Focus tiling layer' ;;
+    en:move_floating) printf 'Niri · Move window to floating' ;;
+    en:move_tiling) printf 'Niri · Move window to tiling' ;;
+    en:switch_focus) printf 'Niri · Switch focus floating ↔ tiling' ;;
+    en:tabbed) printf 'Niri · Toggle tabbed column' ;;
+    en:max_column) printf 'Niri · Maximize column' ;;
+    en:max_window) printf 'Niri · Maximize window to edges' ;;
+    en:center_window) printf 'Niri · Center window' ;;
+    en:center_columns) printf 'Niri · Center visible columns' ;;
+    en:consume_left) printf 'Niri · Consume / expel left' ;;
+    en:consume_right) printf 'Niri · Consume / expel right' ;;
+    en:expel) printf 'Niri · Expel window from column' ;;
+    en:cast_window) printf 'Wayland · Set cast target: focused window' ;;
+    en:cast_monitor) printf 'Wayland · Set cast target: focused monitor' ;;
+    en:clear_cast) printf 'Wayland · Clear cast target' ;;
+    en:stop_cast) printf 'Wayland · Stop screencast' ;;
+    en:switch_keyboard) printf 'Input · Switch keyboard layout' ;;
+    en:screenshot) printf 'Wayland · Screenshot UI' ;;
+    en:quick_status) printf 'Niri · Quick status in terminal' ;;
+    en:reload) printf 'Niri · Reload config' ;;
+    en:language) printf 'Control · Language' ;;
+    en:monitors_off) printf 'System · Power off monitors' ;;
     en:app_prompt) printf 'Launch app' ;;
     en:language_prompt) printf 'Language / 언어' ;;
     en:auto_lang) printf 'Auto: follow system language' ;;
@@ -254,7 +254,7 @@ menu_items() {
 MENU
 }
 
-choice="$(menu_items | wofi "${WOFI_BASE_ARGS[@]}" --dmenu --prompt "$(i18n prompt)" --width 820 --height 700 --lines 22 --insensitive)" || exit 0
+choice="$(menu_items | wofi "${WOFI_BASE_ARGS[@]}" --dmenu --prompt "$(i18n prompt)" --width 900 --height 720 --lines 22 --insensitive)" || exit 0
 
 case "$choice" in
   *"$(i18n launch_app)"*) launch_app ;;
@@ -298,5 +298,6 @@ case "$choice" in
     fi
     ;;
 esac
+
 
 

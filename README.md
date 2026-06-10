@@ -8,7 +8,8 @@ Built on a CachyOS + Niri + Rio setup, but the scripts are intentionally plain B
 
 - `ALT+SPACE` Niri Control Center via Wofi
 - Dedicated emerald/cyan glassmorphism Wofi theme installed under `~/.config/niri-control-center/`
-- Existing app launching from the Control Center via `Launch app` (`wofi --show drun`)
+- Raycast-inspired but Niri-native command vocabulary: `Niri ·`, `Wayland ·`, `AI ·`, `System ·`, `App ·` actions
+- Existing app launching from the Control Center via `App · Launch / search app` (`wofi --show drun`)
 - Spotlight-style app search: type an app name directly in `ALT+SPACE`; unknown text opens `wofi --show drun --search <text>`
 - Localized Control Center labels with `auto`, `ko`, and `en` language modes
 - Hermes Agent submenu:
