@@ -7,6 +7,13 @@ INTERACTIVE_TERMINAL="${NIRI_HERMES_INTERACTIVE_TERMINAL:-}"
 HERMES_RIO_APP_ID="${NIRI_HERMES_RIO_APP_ID:-niri-hermes-rio}"
 HERMES_ALACRITTY_CLASS="${NIRI_HERMES_ALACRITTY_CLASS:-niri-hermes-alacritty}"
 AGENT_RUNNER="${NIRI_AGENT_RUNNER:-$HOME/.local/bin/niri-agent-run}"
+CONFIG_DIR="${NIRI_CONTROL_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/niri-control-center}"
+WOFI_STYLE="${NIRI_CONTROL_WOFI_STYLE:-$CONFIG_DIR/wofi-glass.css}"
+WOFI_CONF="${NIRI_CONTROL_WOFI_CONF:-$CONFIG_DIR/wofi-glass.conf}"
+WOFI_BASE_ARGS=()
+[[ -f "$WOFI_CONF" ]] && WOFI_BASE_ARGS+=(--conf "$WOFI_CONF")
+[[ -f "$WOFI_STYLE" ]] && WOFI_BASE_ARGS+=(--style "$WOFI_STYLE")
+WOFI_BASE_ARGS+=(--gtk-dark)
 
 notify() {
   if command -v notify-send >/dev/null 2>&1; then
@@ -151,14 +158,14 @@ run_codex_result_window() {
 }
 
 ask_prompt() {
-  printf '' | wofi --dmenu --prompt "Ask Hermes" --width 760 --height 160 --lines 1 --exec-search --gtk-dark || true
+  printf '' | wofi "${WOFI_BASE_ARGS[@]}" --dmenu --prompt "Ask Hermes" --width 760 --height 160 --lines 1 --exec-search || true
 }
 
 codex_prompt() {
-  printf '' | wofi --dmenu --prompt "Codex exec task" --width 820 --height 160 --lines 1 --exec-search --gtk-dark || true
+  printf '' | wofi "${WOFI_BASE_ARGS[@]}" --dmenu --prompt "Codex exec task" --width 820 --height 160 --lines 1 --exec-search || true
 }
 
-choice="$(cat <<'MENU' | wofi --dmenu --prompt 'Hermes Agent' --width 740 --height 480 --lines 11 --insensitive --gtk-dark --no-custom-entry
+choice="$(cat <<'MENU' | wofi "${WOFI_BASE_ARGS[@]}" --dmenu --prompt 'Hermes Agent' --width 760 --height 520 --lines 11 --insensitive --no-custom-entry
 󰚩  Open interactive Hermes terminal + completion notification
 󰭹  Ask Hermes native one-shot prompt + completion notification
 󰈈  Ask Hermes about focused Niri window + completion notification
@@ -212,3 +219,4 @@ case "$choice" in
     spawn_terminal "Hermes Skills" sh -lc '"$1" skills list; printf "\nPress Enter to close..."; read -r _' sh "$hermes"
     ;;
 esac
+

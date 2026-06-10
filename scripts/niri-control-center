@@ -2,8 +2,14 @@
 set -euo pipefail
 
 BIN_DIR="${NIRI_CONTROL_BIN_DIR:-$HOME/.local/bin}"
-CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/niri-control-center"
+CONFIG_DIR="${NIRI_CONTROL_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/niri-control-center}"
 CONFIG_FILE="$CONFIG_DIR/config"
+WOFI_STYLE="${NIRI_CONTROL_WOFI_STYLE:-$CONFIG_DIR/wofi-glass.css}"
+WOFI_CONF="${NIRI_CONTROL_WOFI_CONF:-$CONFIG_DIR/wofi-glass.conf}"
+WOFI_BASE_ARGS=()
+[[ -f "$WOFI_CONF" ]] && WOFI_BASE_ARGS+=(--conf "$WOFI_CONF")
+[[ -f "$WOFI_STYLE" ]] && WOFI_BASE_ARGS+=(--style "$WOFI_STYLE")
+WOFI_BASE_ARGS+=(--gtk-dark)
 
 if [[ "${1:-}" == "--self-test" ]]; then
   command -v wofi >/dev/null
@@ -177,33 +183,31 @@ show_info() {
 }
 
 launch_app() {
-  wofi --show drun \
+  wofi "${WOFI_BASE_ARGS[@]}" --show drun \
     --prompt "$(i18n app_prompt)" \
     --width 760 \
     --height 620 \
     --lines 16 \
     --insensitive \
-    --gtk-dark \
     --allow-images >/dev/null 2>&1 &
 }
 
 launch_app_search() {
   local query="$1"
-  wofi --show drun \
+  wofi "${WOFI_BASE_ARGS[@]}" --show drun \
     --prompt "$(i18n app_prompt)" \
     --search "$query" \
     --width 760 \
     --height 620 \
     --lines 16 \
     --insensitive \
-    --gtk-dark \
     --allow-images >/dev/null 2>&1 &
 }
 
 language_menu() {
   local choice
   choice="$(printf '%s\n%s\n%s\n' "$(i18n auto_lang)" "$(i18n korean)" "$(i18n english)" | \
-    wofi --dmenu --prompt "$(i18n language_prompt)" --width 560 --height 230 --lines 3 --insensitive --gtk-dark --no-custom-entry)" || return 0
+    wofi "${WOFI_BASE_ARGS[@]}" --dmenu --prompt "$(i18n language_prompt)" --width 560 --height 230 --lines 3 --insensitive --no-custom-entry)" || return 0
   case "$choice" in
     *"Auto"*|*"자동"*) write_language auto; notify "$(i18n language_saved)" "$(i18n auto_saved)" ;;
     *"한국어"*) write_language ko; notify "$(i18n language_saved)" "한국어" ;;
@@ -250,7 +254,7 @@ menu_items() {
 MENU
 }
 
-choice="$(menu_items | wofi --dmenu --prompt "$(i18n prompt)" --width 820 --height 700 --lines 22 --insensitive --gtk-dark)" || exit 0
+choice="$(menu_items | wofi "${WOFI_BASE_ARGS[@]}" --dmenu --prompt "$(i18n prompt)" --width 820 --height 700 --lines 22 --insensitive)" || exit 0
 
 case "$choice" in
   *"$(i18n launch_app)"*) launch_app ;;
@@ -294,4 +298,5 @@ case "$choice" in
     fi
     ;;
 esac
+
 

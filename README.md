@@ -7,6 +7,7 @@ Built on a CachyOS + Niri + Rio setup, but the scripts are intentionally plain B
 ## Features
 
 - `ALT+SPACE` Niri Control Center via Wofi
+- Dedicated emerald/cyan glassmorphism Wofi theme installed under `~/.config/niri-control-center/`
 - Existing app launching from the Control Center via `Launch app` (`wofi --show drun`)
 - Spotlight-style app search: type an app name directly in `ALT+SPACE`; unknown text opens `wofi --show drun --search <text>`
 - Localized Control Center labels with `auto`, `ko`, and `en` language modes
@@ -117,7 +118,21 @@ Screenshots are not committed by default. Drop your own into `assets/` if you wa
 - Power menu asks for confirmation before logout, suspend, reboot, or shutdown.
 - No secrets are stored by these scripts.
 
-## Language and app search
+## Theme, language, and app search
+
+The installer copies a dedicated Control Center Wofi theme to:
+
+```text
+~/.config/niri-control-center/wofi-glass.css
+~/.config/niri-control-center/wofi-glass.conf
+```
+
+The scripts use this theme automatically. To override it without editing the scripts:
+
+```bash
+export NIRI_CONTROL_WOFI_STYLE=/path/to/style.css
+export NIRI_CONTROL_WOFI_CONF=/path/to/wofi.conf
+```
 
 The Control Center follows the system language by default and can also be pinned manually:
 
