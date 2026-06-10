@@ -7,6 +7,7 @@ Built on a CachyOS + Niri + Rio setup, but the scripts are intentionally plain B
 ## Features
 
 - `ALT+SPACE` Niri Control Center via Wofi
+- Existing app launching from the Control Center via `Launch app` (`wofi --show drun`)
 - Hermes Agent submenu:
   - open interactive `hermes --tui chat` in a real terminal/PTY
   - ask Niri-native one-shot prompts with Wofi + `hermes chat -q`

@@ -46,7 +46,19 @@ show_info() {
   fi
 }
 
+launch_app() {
+  wofi --show drun \
+    --prompt "Launch app" \
+    --width 760 \
+    --height 620 \
+    --lines 16 \
+    --insensitive \
+    --gtk-dark \
+    --allow-images >/dev/null 2>&1 &
+}
+
 choice="$(cat <<'MENU' | wofi --dmenu --prompt 'Niri Control' --width 760 --height 660 --lines 20 --insensitive --gtk-dark --no-custom-entry
+󰀻  Launch app
 󰚩  Hermes Agent
 󰆍  Scratch terminal
 󰋼  Window HUD
@@ -83,6 +95,7 @@ MENU
 )" || exit 0
 
 case "$choice" in
+  *"Launch app"*) launch_app ;;
   *"Hermes Agent"*) "$BIN_DIR/niri-hermes-menu" ;;
   *"Scratch terminal"*) "$BIN_DIR/niri-scratch-terminal" ;;
   *"Window HUD"*) "$BIN_DIR/niri-window-hud" ;;
