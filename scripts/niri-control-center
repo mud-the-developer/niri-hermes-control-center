@@ -15,7 +15,9 @@ if [[ "${1:-}" == "--self-test" ]]; then
 fi
 
 notify() {
-  command -v notify-send >/dev/null 2>&1 && notify-send -a "Niri Control" "$1" "${2:-}" >/dev/null 2>&1 || true
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send -a "Niri Control" "$1" "${2:-}" >/dev/null 2>&1 || true
+  fi
 }
 
 run_action() {

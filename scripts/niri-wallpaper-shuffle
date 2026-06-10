@@ -5,7 +5,9 @@ wallpaper_dir="${NIRI_WALLPAPER_DIR:-$HOME/.local/share/backgrounds}"
 mapfile -d '' images < <(find "$wallpaper_dir" -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) -print0 2>/dev/null)
 
 if ((${#images[@]} == 0)); then
-  command -v notify-send >/dev/null 2>&1 && notify-send -a "Niri Wallpaper" "No local wallpapers found" "Add images to $wallpaper_dir" >/dev/null 2>&1 || true
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send -a "Niri Wallpaper" "No local wallpapers found" "Add images to $wallpaper_dir" >/dev/null 2>&1 || true
+  fi
   exit 1
 fi
 
@@ -20,4 +22,6 @@ img="${images[$idx]}"
 pgrep -x awww-daemon >/dev/null 2>&1 || awww-daemon --quiet >/dev/null 2>&1 &
 sleep 0.2
 awww img "$img" --resize crop --filter Lanczos3 --transition-type fade --transition-duration "${NIRI_WALLPAPER_TRANSITION_DURATION:-0.65}" --transition-fps "${NIRI_WALLPAPER_TRANSITION_FPS:-180}"
-command -v notify-send >/dev/null 2>&1 && notify-send -a "Niri Wallpaper" "Wallpaper transitioned" "$(basename "$img")" >/dev/null 2>&1 || true
+if command -v notify-send >/dev/null 2>&1; then
+  notify-send -a "Niri Wallpaper" "Wallpaper transitioned" "$(basename "$img")" >/dev/null 2>&1 || true
+fi

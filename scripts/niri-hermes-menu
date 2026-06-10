@@ -6,7 +6,9 @@ HERMES_CMD="${NIRI_HERMES_CMD:-hermes}"
 HERMES_RIO_APP_ID="${NIRI_HERMES_RIO_APP_ID:-niri-hermes-rio}"
 
 notify() {
-  command -v notify-send >/dev/null 2>&1 && notify-send -a "Niri Hermes" "$1" "${2:-}" >/dev/null 2>&1 || true
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send -a "Niri Hermes" "$1" "${2:-}" >/dev/null 2>&1 || true
+  fi
 }
 
 spawn_terminal() {

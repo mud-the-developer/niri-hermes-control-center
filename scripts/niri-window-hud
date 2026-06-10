@@ -6,5 +6,7 @@ info="$(niri msg focused-window 2>/dev/null || true)"
 summary="$(printf '%s\n' "$info" | grep -E 'Window ID|Title:|App ID:|Is floating|PID:|Workspace ID:' | sed 's/^  //' | sed -n '1,8p')"
 [[ -z "$summary" ]] && summary="$info"
 
-command -v notify-send >/dev/null 2>&1 && notify-send -a "Niri Window" "Focused window" "$summary" >/dev/null 2>&1 || true
+if command -v notify-send >/dev/null 2>&1; then
+  notify-send -a "Niri Window" "Focused window" "$summary" >/dev/null 2>&1 || true
+fi
 printf '%s\n' "$summary"

@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-notify() { command -v notify-send >/dev/null 2>&1 && notify-send -a "Niri Scratch" "$1" "${2:-}" >/dev/null 2>&1 || true; }
+notify() {
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send -a "Niri Scratch" "$1" "${2:-}" >/dev/null 2>&1 || true
+  fi
+}
 
 APP_ID="${NIRI_SCRATCH_APP_ID:-niri-scratch-rio}"
 TERMINAL_CMD="${NIRI_SCRATCH_TERMINAL:-rio}"
@@ -14,8 +18,10 @@ if pgrep -af "--app-id $APP_ID|--app-id=$APP_ID" >/dev/null 2>&1; then
 fi
 
 if [[ "$TERMINAL_CMD" == "rio" ]] && command -v rio >/dev/null 2>&1; then
+  # shellcheck disable=SC2016 # Expand $HOME/$SHELL inside the spawned shell, not in this launcher.
   rio --app-id "$APP_ID" --title-placeholder "Scratch Terminal" -e "$SHELL_CMD" -lc 'cd "$HOME"; printf "\\033[36m󰆍 Niri scratch terminal\\033[0m\n"; exec "${SHELL:-/bin/sh}"' >/dev/null 2>&1 &
 else
+  # shellcheck disable=SC2016 # Expand $HOME/$SHELL inside the spawned shell, not in this launcher.
   "$TERMINAL_CMD" -e "$SHELL_CMD" -lc 'cd "$HOME"; printf "Niri scratch terminal\n"; exec "${SHELL:-/bin/sh}"' >/dev/null 2>&1 &
 fi
 
