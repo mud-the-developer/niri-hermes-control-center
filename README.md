@@ -173,16 +173,43 @@ The Hermes menu uses this wrapper for one-shot Hermes, focused-window analysis, 
 
 ## Development
 
-Run syntax checks:
+The Control Center and Hermes submenu are structured as small shell state machines:
+
+- **state machine**: menu states such as `menu`, `language_menu`, `ask_hermes_prompt`, `codex_prompt`
+- **pure reducers**: `choice -> state/effect` functions exposed through headless flags such as `--reduce-choice`
+- **effect runners**: the only layer that actually calls `wofi`, `niri msg action`, terminals, notifications, Hermes, or Codex
+
+This keeps the interactive desktop behavior testable without clicking through Wofi.
+
+Run all local checks:
 
 ```bash
-bash -n scripts/* install.sh
+tests/run-all.bash
+```
+
+Individual checks:
+
+```bash
+bash -n scripts/* install.sh tests/*.bash
+tests/control-center-reducer.bash
+tests/hermes-menu-reducer.bash
+tests/niri-action-names.bash
 ```
 
 Smoke test after install:
 
 ```bash
+./install.sh
 ~/.local/bin/niri-control-center --self-test
+```
+
+Useful headless inspection commands:
+
+```bash
+NIRI_CONTROL_LANGUAGE=ko scripts/niri-control-center --prompt
+NIRI_CONTROL_LANGUAGE=ko scripts/niri-control-center --menu-items
+NIRI_CONTROL_LANGUAGE=ko scripts/niri-control-center --reduce-choice '󰈈  Niri · 오버뷰 켜기/끄기'
+scripts/niri-hermes-menu --reduce-choice '󰑐  Hermes · Status'
 ```
 
 ## License

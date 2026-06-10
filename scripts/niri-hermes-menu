@@ -15,10 +15,25 @@ WOFI_BASE_ARGS=()
 [[ -f "$WOFI_STYLE" ]] && WOFI_BASE_ARGS+=(--style "$WOFI_STYLE")
 WOFI_BASE_ARGS+=(--gtk-dark)
 
+PROMPT='AI Native · Hermes / Codex / Niri context'
+
 notify() {
   if command -v notify-send >/dev/null 2>&1; then
     notify-send -a "Niri Hermes" "$1" "${2:-}" >/dev/null 2>&1 || true
   fi
+}
+
+emit_effect() {
+  printf 'effect'
+  local part
+  for part in "$@"; do
+    printf '\t%s' "$part"
+  done
+  printf '\n'
+}
+
+emit_state() {
+  printf 'state\t%s\n' "$1"
 }
 
 resolve_hermes() {
@@ -93,6 +108,44 @@ spawn_terminal() {
   esac
 }
 
+menu_items() {
+  cat <<'MENU'
+󰚩  AI · Open interactive Hermes TUI  · PTY native terminal
+󰭹  AI · Ask Hermes one-shot  · Wofi native input
+󰈈  Niri+AI · Explain focused window state
+󰣐  AI · Run Codex exec  · notify on finish
+󰍹  Wayland+AI · Screenshot workflow advisor
+󰑐  Hermes · Status
+󰒲  Hermes · Doctor
+󰈙  Hermes · Sessions
+󰘳  Hermes · Skills
+MENU
+}
+
+reduce_choice() {
+  local choice="$1"
+  case "$choice" in
+    *"interactive Hermes TUI"*) emit_effect interactive_hermes ;;
+    *"Ask Hermes one-shot"*) emit_state ask_hermes_prompt ;;
+    *"focused window state"*) emit_effect focused_window_hermes ;;
+    *"Codex exec"*) emit_state codex_prompt ;;
+    *"Screenshot workflow"*) emit_effect screenshot_workflow_hermes ;;
+    *"Hermes · Status"*) emit_effect hermes_cli "Hermes Status" status --all ;;
+    *"Hermes · Doctor"*) emit_effect hermes_cli "Hermes Doctor" doctor ;;
+    *"Hermes · Sessions"*) emit_effect hermes_cli "Hermes Sessions" sessions list ;;
+    *"Hermes · Skills"*) emit_effect hermes_cli "Hermes Skills" skills list ;;
+    ''|*) emit_effect noop ;;
+  esac
+}
+
+ask_prompt() {
+  printf '' | wofi "${WOFI_BASE_ARGS[@]}" --dmenu --prompt "AI Native · ask Hermes" --width 780 --height 160 --lines 1 --exec-search || true
+}
+
+codex_prompt() {
+  printf '' | wofi "${WOFI_BASE_ARGS[@]}" --dmenu --prompt "AI Native · Codex task" --width 840 --height 160 --lines 1 --exec-search || true
+}
+
 spawn_interactive_hermes() {
   local hermes terminal runner
   hermes="$(resolve_hermes)" || {
@@ -108,8 +161,6 @@ spawn_interactive_hermes() {
     return 1
   }
 
-  # Hermes interactive mode is a prompt_toolkit/TUI app, so it needs a real terminal/PTY.
-  # Launch through niri-agent-run so closing/exiting Hermes sends a completion notification.
   case "$(basename "$terminal")" in
     alacritty)
       "$terminal" --class "$HERMES_ALACRITTY_CLASS,$HERMES_ALACRITTY_CLASS" --title "Hermes Agent" --hold -e sh -lc 'exec "$1" --title "Hermes interactive" -- "$2" --tui chat' sh "$runner" "$hermes" >/dev/null 2>&1 &
@@ -157,67 +208,66 @@ run_codex_result_window() {
   notify "Codex" "Task started; completion notification enabled"
 }
 
-ask_prompt() {
-  printf '' | wofi "${WOFI_BASE_ARGS[@]}" --dmenu --prompt "AI Native · ask Hermes" --width 780 --height 160 --lines 1 --exec-search || true
+run_hermes_cli() {
+  local title="$1"
+  shift
+  local hermes
+  hermes="$(resolve_hermes)" || {
+    notify "Hermes not found" "Set NIRI_HERMES_CMD=/path/to/hermes"
+    return 1
+  }
+  if [[ "$title" == "Hermes Status" ]]; then
+    spawn_terminal "$title" sh -lc '"$1" status --all 2>/dev/null || "$1" status; printf "\nPress Enter to close..."; read -r _' sh "$hermes"
+  else
+    spawn_terminal "$title" sh -lc '"$1" "${@:2}"; printf "\nPress Enter to close..."; read -r _' sh "$hermes" "$@"
+  fi
 }
 
-codex_prompt() {
-  printf '' | wofi "${WOFI_BASE_ARGS[@]}" --dmenu --prompt "AI Native · Codex task" --width 840 --height 160 --lines 1 --exec-search || true
+run_effect() {
+  local encoded="$1"
+  local -a parts=()
+  IFS=$'\t' read -r -a parts <<< "$encoded"
+  [[ "${parts[0]:-}" == "effect" ]] || return 0
+  case "${parts[1]:-noop}" in
+    interactive_hermes) spawn_interactive_hermes ;;
+    focused_window_hermes)
+      local info
+      info="$(niri msg focused-window 2>/dev/null || true)"
+      [[ -z "$info" ]] && info="No focused window detected."
+      run_hermes_result_window "Hermes focused window" "Explain this Niri focused-window state and suggest useful next window-management action:\n\n$info"
+      notify "Hermes" "Focused window sent; completion notification enabled"
+      ;;
+    screenshot_workflow_hermes)
+      run_hermes_result_window "Hermes screenshot workflow" "For my Niri Wayland desktop, suggest a polished screenshot workflow using niri screenshot actions, grim, wl-copy, slurp/swappy if installed, and explain required packages."
+      ;;
+    hermes_cli) run_hermes_cli "${parts[2]}" "${parts[@]:3}" ;;
+    noop) : ;;
+  esac
 }
 
-choice="$(cat <<'MENU' | wofi "${WOFI_BASE_ARGS[@]}" --dmenu --prompt 'AI Native · Hermes / Codex / Niri context' --width 840 --height 520 --lines 11 --insensitive --no-custom-entry
-󰚩  AI · Open interactive Hermes TUI  · PTY native terminal
-󰭹  AI · Ask Hermes one-shot  · Wofi native input
-󰈈  Niri+AI · Explain focused window state
-󰣐  AI · Run Codex exec  · notify on finish
-󰍹  Wayland+AI · Screenshot workflow advisor
-󰑐  Hermes · Status
-󰒲  Hermes · Doctor
-󰈙  Hermes · Sessions
-󰘳  Hermes · Skills
-MENU
-)" || exit 0
+main_menu() {
+  local choice transition prompt task
+  choice="$(menu_items | wofi "${WOFI_BASE_ARGS[@]}" --dmenu --prompt "$PROMPT" --width 840 --height 520 --lines 11 --insensitive --no-custom-entry)" || exit 0
+  transition="$(reduce_choice "$choice")"
+  case "$transition" in
+    $'state\task_hermes_prompt')
+      prompt="$(ask_prompt)"
+      [[ -z "$prompt" ]] && exit 0
+      run_hermes_result_window "Hermes one-shot" "$prompt"
+      notify "Hermes" "Question sent; completion notification enabled"
+      ;;
+    $'state\tcodex_prompt')
+      task="$(codex_prompt)"
+      [[ -z "$task" ]] && exit 0
+      run_codex_result_window "$task"
+      ;;
+    *) run_effect "$transition" ;;
+  esac
+}
 
-case "$choice" in
-  *"interactive Hermes TUI"*)
-    spawn_interactive_hermes
-    ;;
-  *"Ask Hermes one-shot"*)
-    prompt="$(ask_prompt)"
-    [[ -z "$prompt" ]] && exit 0
-    run_hermes_result_window "Hermes one-shot" "$prompt"
-    notify "Hermes" "Question sent; completion notification enabled"
-    ;;
-  *"focused window state"*)
-    info="$(niri msg focused-window 2>/dev/null || true)"
-    [[ -z "$info" ]] && info="No focused window detected."
-    run_hermes_result_window "Hermes focused window" "Explain this Niri focused-window state and suggest useful next window-management action:\n\n$info"
-    notify "Hermes" "Focused window sent; completion notification enabled"
-    ;;
-  *"Codex exec"*)
-    task="$(codex_prompt)"
-    [[ -z "$task" ]] && exit 0
-    run_codex_result_window "$task"
-    ;;
-  *"Screenshot workflow"*)
-    run_hermes_result_window "Hermes screenshot workflow" "For my Niri Wayland desktop, suggest a polished screenshot workflow using niri screenshot actions, grim, wl-copy, slurp/swappy if installed, and explain required packages."
-    ;;
-  *"Hermes status"*)
-    hermes="$(resolve_hermes)" || { notify "Hermes not found" "Set NIRI_HERMES_CMD=/path/to/hermes"; exit 1; }
-    spawn_terminal "Hermes Status" sh -lc '"$1" status --all 2>/dev/null || "$1" status; printf "\nPress Enter to close..."; read -r _' sh "$hermes"
-    ;;
-  *"Hermes doctor"*)
-    hermes="$(resolve_hermes)" || { notify "Hermes not found" "Set NIRI_HERMES_CMD=/path/to/hermes"; exit 1; }
-    spawn_terminal "Hermes Doctor" sh -lc '"$1" doctor; printf "\nPress Enter to close..."; read -r _' sh "$hermes"
-    ;;
-  *"sessions"*)
-    hermes="$(resolve_hermes)" || { notify "Hermes not found" "Set NIRI_HERMES_CMD=/path/to/hermes"; exit 1; }
-    spawn_terminal "Hermes Sessions" sh -lc '"$1" sessions list; printf "\nPress Enter to close..."; read -r _' sh "$hermes"
-    ;;
-  *"skills"*)
-    hermes="$(resolve_hermes)" || { notify "Hermes not found" "Set NIRI_HERMES_CMD=/path/to/hermes"; exit 1; }
-    spawn_terminal "Hermes Skills" sh -lc '"$1" skills list; printf "\nPress Enter to close..."; read -r _' sh "$hermes"
-    ;;
+case "${1:-}" in
+  --prompt) printf '%s\n' "$PROMPT" ;;
+  --menu-items) menu_items ;;
+  --reduce-choice) reduce_choice "${2:-}" ;;
+  *) main_menu ;;
 esac
-
-

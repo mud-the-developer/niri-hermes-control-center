@@ -11,19 +11,11 @@ WOFI_BASE_ARGS=()
 [[ -f "$WOFI_STYLE" ]] && WOFI_BASE_ARGS+=(--style "$WOFI_STYLE")
 WOFI_BASE_ARGS+=(--gtk-dark)
 
-if [[ "${1:-}" == "--self-test" ]]; then
-  command -v wofi >/dev/null
-  command -v niri >/dev/null
-  test -x "$BIN_DIR/niri-hermes-menu"
-  test -x "$BIN_DIR/niri-agent-run"
-  test -x "$BIN_DIR/niri-scratch-terminal"
-  test -x "$BIN_DIR/niri-window-hud"
-  test -x "$BIN_DIR/niri-power-menu"
-  test -x "$BIN_DIR/niri-wallpaper-shuffle"
-  exit 0
-fi
-
 config_language() {
+  if [[ -n "${NIRI_CONTROL_LANGUAGE:-}" ]]; then
+    printf '%s\n' "$NIRI_CONTROL_LANGUAGE"
+    return 0
+  fi
   if [[ -f "$CONFIG_FILE" ]]; then
     # shellcheck source=/dev/null
     . "$CONFIG_FILE" 2>/dev/null || true
@@ -151,17 +143,136 @@ i18n() {
   esac
 }
 
-notify() {
+menu_items() {
+  cat <<MENU
+󰀻  $(i18n launch_app)
+󰚩  $(i18n hermes)
+󰆍  $(i18n scratch)
+󰋼  $(i18n hud)
+󰸉  $(i18n wallpaper)
+󰐥  $(i18n power_menu)
+󰈈  $(i18n overview)
+󰐊  $(i18n transition)
+󰌾  $(i18n cheatsheet)
+󰆾  $(i18n opacity)
+󰉈  $(i18n floating)
+󰹑  $(i18n focus_floating)
+󰹒  $(i18n focus_tiling)
+󰜺  $(i18n move_floating)
+󰜻  $(i18n move_tiling)
+󰹕  $(i18n switch_focus)
+󰘖  $(i18n tabbed)
+󰹖  $(i18n max_column)
+󰹗  $(i18n max_window)
+󰹘  $(i18n center_window)
+󰹙  $(i18n center_columns)
+󰁌  $(i18n consume_left)
+󰁔  $(i18n consume_right)
+󰹚  $(i18n expel)
+󰔬  $(i18n cast_window)
+󰔭  $(i18n cast_monitor)
+󰅖  $(i18n clear_cast)
+󰓛  $(i18n stop_cast)
+󰌌  $(i18n switch_keyboard)
+󰍹  $(i18n screenshot)
+󰹛  $(i18n quick_status)
+󰑐  $(i18n reload)
+󰅶  $(i18n language)
+⏻  $(i18n monitors_off)
+MENU
+}
+
+language_items() {
+  printf '%s\n%s\n%s\n' "$(i18n auto_lang)" "$(i18n korean)" "$(i18n english)"
+}
+
+notify_user() {
   if command -v notify-send >/dev/null 2>&1; then
     notify-send -a "Niri Control" "$1" "${2:-}" >/dev/null 2>&1 || true
   fi
 }
 
-run_action() {
+emit_effect() {
+  printf 'effect'
+  local part
+  for part in "$@"; do
+    printf '\t%s' "$part"
+  done
+  printf '\n'
+}
+
+emit_state() {
+  printf 'state\t%s\n' "$1"
+}
+
+reduce_menu_choice() {
+  local choice="$1"
+  case "$choice" in
+    *"$(i18n launch_app)"*) emit_effect launch_app ;;
+    *"$(i18n hermes)"*) emit_effect spawn_script niri-hermes-menu ;;
+    *"$(i18n scratch)"*) emit_effect spawn_script niri-scratch-terminal ;;
+    *"$(i18n hud)"*) emit_effect spawn_script niri-window-hud ;;
+    *"$(i18n wallpaper)"*) emit_effect spawn_script niri-wallpaper-shuffle ;;
+    *"$(i18n power_menu)"*) emit_effect spawn_script niri-power-menu ;;
+    *"$(i18n overview)"*) emit_effect niri_action "$(i18n overview)" toggle-overview ;;
+    *"$(i18n transition)"*) emit_effect niri_action "$(i18n transition)" do-screen-transition --delay-ms 140 ;;
+    *"$(i18n cheatsheet)"*) emit_effect niri_action "$(i18n cheatsheet)" show-hotkey-overlay ;;
+    *"$(i18n opacity)"*) emit_effect niri_action "$(i18n opacity)" toggle-window-rule-opacity ;;
+    *"$(i18n floating)"*) emit_effect niri_action "$(i18n floating)" toggle-window-floating ;;
+    *"$(i18n focus_floating)"*) emit_effect niri_action "$(i18n focus_floating)" focus-floating ;;
+    *"$(i18n focus_tiling)"*) emit_effect niri_action "$(i18n focus_tiling)" focus-tiling ;;
+    *"$(i18n move_floating)"*) emit_effect niri_action "$(i18n move_floating)" move-window-to-floating ;;
+    *"$(i18n move_tiling)"*) emit_effect niri_action "$(i18n move_tiling)" move-window-to-tiling ;;
+    *"$(i18n switch_focus)"*) emit_effect niri_action "$(i18n switch_focus)" switch-focus-between-floating-and-tiling ;;
+    *"$(i18n tabbed)"*) emit_effect niri_action "$(i18n tabbed)" toggle-column-tabbed-display ;;
+    *"$(i18n max_column)"*) emit_effect niri_action "$(i18n max_column)" maximize-column ;;
+    *"$(i18n max_window)"*) emit_effect niri_action "$(i18n max_window)" maximize-window-to-edges ;;
+    *"$(i18n center_window)"*) emit_effect niri_action "$(i18n center_window)" center-window ;;
+    *"$(i18n center_columns)"*) emit_effect niri_action "$(i18n center_columns)" center-visible-columns ;;
+    *"$(i18n consume_left)"*) emit_effect niri_action "$(i18n consume_left)" consume-or-expel-window-left ;;
+    *"$(i18n consume_right)"*) emit_effect niri_action "$(i18n consume_right)" consume-or-expel-window-right ;;
+    *"$(i18n expel)"*) emit_effect niri_action "$(i18n expel)" expel-window-from-column ;;
+    *"$(i18n cast_window)"*) emit_effect niri_action "$(i18n cast_window)" set-dynamic-cast-window ;;
+    *"$(i18n cast_monitor)"*) emit_effect niri_action "$(i18n cast_monitor)" set-dynamic-cast-monitor ;;
+    *"$(i18n clear_cast)"*) emit_effect niri_action "$(i18n clear_cast)" clear-dynamic-cast-target ;;
+    *"$(i18n stop_cast)"*) emit_effect niri_action "$(i18n stop_cast)" stop-cast ;;
+    *"$(i18n switch_keyboard)"*) emit_effect niri_action "$(i18n switch_keyboard)" switch-layout ;;
+    *"$(i18n screenshot)"*) emit_effect niri_action "$(i18n screenshot)" screenshot ;;
+    *"$(i18n quick_status)"*) emit_effect show_info ;;
+    *"$(i18n reload)"*) emit_effect niri_action "$(i18n reload)" load-config-file ;;
+    *"$(i18n language)"*) emit_state language_menu ;;
+    *"$(i18n monitors_off)"*) emit_effect niri_action "$(i18n monitors_off)" power-off-monitors ;;
+    '') emit_effect noop ;;
+    *) emit_effect launch_app_search "$choice" ;;
+  esac
+}
+
+reduce_language_choice() {
+  local choice="$1"
+  case "$choice" in
+    *"Auto"*|*"자동"*) emit_effect write_language auto ;;
+    *"한국어"*) emit_effect write_language ko ;;
+    *"English"*) emit_effect write_language en ;;
+    '') emit_effect noop ;;
+    *) emit_effect noop ;;
+  esac
+}
+
+reduce_state() {
+  local state="$1"
+  local event="$2"
+  case "$state" in
+    menu) reduce_menu_choice "$event" ;;
+    language_menu) reduce_language_choice "$event" ;;
+    *) emit_effect noop ;;
+  esac
+}
+
+run_niri_action() {
   local label="$1"
   shift
   niri msg action "$@"
-  notify "$label" "niri msg action $*"
+  notify_user "$label" "niri msg action $*"
 }
 
 show_info() {
@@ -204,100 +315,70 @@ launch_app_search() {
     --allow-images >/dev/null 2>&1 &
 }
 
-language_menu() {
-  local choice
-  choice="$(printf '%s\n%s\n%s\n' "$(i18n auto_lang)" "$(i18n korean)" "$(i18n english)" | \
-    wofi "${WOFI_BASE_ARGS[@]}" --dmenu --prompt "$(i18n language_prompt)" --width 560 --height 230 --lines 3 --insensitive --no-custom-entry)" || return 0
-  case "$choice" in
-    *"Auto"*|*"자동"*) write_language auto; notify "$(i18n language_saved)" "$(i18n auto_saved)" ;;
-    *"한국어"*) write_language ko; notify "$(i18n language_saved)" "한국어" ;;
-    *"English"*) write_language en; notify "$(i18n language_saved)" "English" ;;
+run_effect() {
+  local encoded="$1"
+  local -a parts=()
+  local kind
+  local effect
+  IFS=$'\t' read -r -a parts <<< "$encoded"
+  kind="${parts[0]:-}"
+  effect="${parts[1]:-noop}"
+  [[ "$kind" == "effect" ]] || return 0
+  case "$effect" in
+    launch_app) launch_app ;;
+    launch_app_search)
+      notify_user "$(i18n unknown_search)" "$(i18n unknown_body): ${parts[2]:-}"
+      launch_app_search "${parts[2]:-}"
+      ;;
+    spawn_script) "$BIN_DIR/${parts[2]}" ;;
+    niri_action) run_niri_action "${parts[2]}" "${parts[@]:3}" ;;
+    show_info) show_info ;;
+    write_language)
+      write_language "${parts[2]:-auto}"
+      case "${parts[2]:-auto}" in
+        auto) notify_user "$(i18n language_saved)" "$(i18n auto_saved)" ;;
+        ko) notify_user "$(i18n language_saved)" "한국어" ;;
+        en) notify_user "$(i18n language_saved)" "English" ;;
+      esac
+      ;;
+    noop) : ;;
   esac
 }
 
-menu_items() {
-  cat <<MENU
-󰀻  $(i18n launch_app)
-󰚩  $(i18n hermes)
-󰆍  $(i18n scratch)
-󰋼  $(i18n hud)
-󰸉  $(i18n wallpaper)
-󰐥  $(i18n power_menu)
-󰈈  $(i18n overview)
-󰐊  $(i18n transition)
-󰌾  $(i18n cheatsheet)
-󰆾  $(i18n opacity)
-󰉈  $(i18n floating)
-󰹑  $(i18n focus_floating)
-󰹒  $(i18n focus_tiling)
-󰜺  $(i18n move_floating)
-󰜻  $(i18n move_tiling)
-󰹕  $(i18n switch_focus)
-󰘖  $(i18n tabbed)
-󰹖  $(i18n max_column)
-󰹗  $(i18n max_window)
-󰹘  $(i18n center_window)
-󰹙  $(i18n center_columns)
-󰁌  $(i18n consume_left)
-󰁔  $(i18n consume_right)
-󰹚  $(i18n expel)
-󰔬  $(i18n cast_window)
-󰔭  $(i18n cast_monitor)
-󰅖  $(i18n clear_cast)
-󰓛  $(i18n stop_cast)
-󰌌  $(i18n switch_keyboard)
-󰍹  $(i18n screenshot)
-󰹛  $(i18n quick_status)
-󰑐  $(i18n reload)
-󰅶  $(i18n language)
-⏻  $(i18n monitors_off)
-MENU
+open_language_menu() {
+  local choice
+  choice="$(language_items | wofi "${WOFI_BASE_ARGS[@]}" --dmenu --prompt "$(i18n language_prompt)" --width 560 --height 230 --lines 3 --insensitive --no-custom-entry)" || return 0
+  run_effect "$(reduce_state language_menu "$choice")"
 }
 
-choice="$(menu_items | wofi "${WOFI_BASE_ARGS[@]}" --dmenu --prompt "$(i18n prompt)" --width 900 --height 720 --lines 22 --insensitive)" || exit 0
+main_menu() {
+  local choice
+  local transition
+  choice="$(menu_items | wofi "${WOFI_BASE_ARGS[@]}" --dmenu --prompt "$(i18n prompt)" --width 900 --height 720 --lines 22 --insensitive)" || exit 0
+  transition="$(reduce_state menu "$choice")"
+  case "$transition" in
+    $'state\tlanguage_menu') open_language_menu ;;
+    *) run_effect "$transition" ;;
+  esac
+}
 
-case "$choice" in
-  *"$(i18n launch_app)"*) launch_app ;;
-  *"$(i18n hermes)"*) "$BIN_DIR/niri-hermes-menu" ;;
-  *"$(i18n scratch)"*) "$BIN_DIR/niri-scratch-terminal" ;;
-  *"$(i18n hud)"*) "$BIN_DIR/niri-window-hud" ;;
-  *"$(i18n wallpaper)"*) "$BIN_DIR/niri-wallpaper-shuffle" ;;
-  *"$(i18n power_menu)"*) "$BIN_DIR/niri-power-menu" ;;
-  *"$(i18n overview)"*) run_action "$(i18n overview)" toggle-overview ;;
-  *"$(i18n transition)"*) run_action "$(i18n transition)" do-screen-transition --delay-ms 140 ;;
-  *"$(i18n cheatsheet)"*) run_action "$(i18n cheatsheet)" show-hotkey-overlay ;;
-  *"$(i18n opacity)"*) run_action "$(i18n opacity)" toggle-window-rule-opacity ;;
-  *"$(i18n floating)"*) run_action "$(i18n floating)" toggle-window-floating ;;
-  *"$(i18n focus_floating)"*) run_action "$(i18n focus_floating)" focus-floating ;;
-  *"$(i18n focus_tiling)"*) run_action "$(i18n focus_tiling)" focus-tiling ;;
-  *"$(i18n move_floating)"*) run_action "$(i18n move_floating)" move-window-to-floating ;;
-  *"$(i18n move_tiling)"*) run_action "$(i18n move_tiling)" move-window-to-tiling ;;
-  *"$(i18n switch_focus)"*) run_action "$(i18n switch_focus)" switch-focus-between-floating-and-tiling ;;
-  *"$(i18n tabbed)"*) run_action "$(i18n tabbed)" toggle-column-tabbed-display ;;
-  *"$(i18n max_column)"*) run_action "$(i18n max_column)" maximize-column ;;
-  *"$(i18n max_window)"*) run_action "$(i18n max_window)" maximize-window-to-edges ;;
-  *"$(i18n center_window)"*) run_action "$(i18n center_window)" center-window ;;
-  *"$(i18n center_columns)"*) run_action "$(i18n center_columns)" center-visible-columns ;;
-  *"$(i18n consume_left)"*) run_action "$(i18n consume_left)" consume-or-expel-window-left ;;
-  *"$(i18n consume_right)"*) run_action "$(i18n consume_right)" consume-or-expel-window-right ;;
-  *"$(i18n expel)"*) run_action "$(i18n expel)" expel-window-from-column ;;
-  *"$(i18n cast_window)"*) run_action "$(i18n cast_window)" set-dynamic-cast-window ;;
-  *"$(i18n cast_monitor)"*) run_action "$(i18n cast_monitor)" set-dynamic-cast-monitor ;;
-  *"$(i18n clear_cast)"*) run_action "$(i18n clear_cast)" clear-dynamic-cast-target ;;
-  *"$(i18n stop_cast)"*) run_action "$(i18n stop_cast)" stop-cast ;;
-  *"$(i18n switch_keyboard)"*) run_action "$(i18n switch_keyboard)" switch-layout ;;
-  *"$(i18n screenshot)"*) run_action "$(i18n screenshot)" screenshot ;;
-  *"$(i18n quick_status)"*) show_info ;;
-  *"$(i18n reload)"*) run_action "$(i18n reload)" load-config-file ;;
-  *"$(i18n language)"*) language_menu ;;
-  *"$(i18n monitors_off)"*) run_action "$(i18n monitors_off)" power-off-monitors ;;
-  *)
-    if [[ -n "$choice" ]]; then
-      notify "$(i18n unknown_search)" "$(i18n unknown_body): $choice"
-      launch_app_search "$choice"
-    fi
-    ;;
+self_test() {
+  command -v wofi >/dev/null
+  command -v niri >/dev/null
+  test -x "$BIN_DIR/niri-hermes-menu"
+  test -x "$BIN_DIR/niri-agent-run"
+  test -x "$BIN_DIR/niri-scratch-terminal"
+  test -x "$BIN_DIR/niri-window-hud"
+  test -x "$BIN_DIR/niri-power-menu"
+  test -x "$BIN_DIR/niri-wallpaper-shuffle"
+}
+
+case "${1:-}" in
+  --self-test) self_test ;;
+  --prompt) i18n prompt; printf '\n' ;;
+  --menu-items) menu_items ;;
+  --language-items) language_items ;;
+  --reduce-choice) reduce_state menu "${2:-}" ;;
+  --state) reduce_state "${2:-menu}" "${3:-}" ;;
+  *) main_menu ;;
 esac
-
-
-
