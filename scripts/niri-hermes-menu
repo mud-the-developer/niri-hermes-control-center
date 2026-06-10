@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016 # sh -lc snippets intentionally expand positional args inside the spawned shell.
 set -euo pipefail
 
 TERMINAL_CMD="${NIRI_HERMES_TERMINAL:-}"
