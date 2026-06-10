@@ -50,7 +50,7 @@ write_language() {
 
 LANGUAGE="$(active_language)"
 
-tr() {
+i18n() {
   local key="$1"
   case "$LANGUAGE:$key" in
     ko:prompt) printf 'Niri 제어 · 앱 이름을 바로 입력해도 됩니다' ;;
@@ -178,7 +178,7 @@ show_info() {
 
 launch_app() {
   wofi --show drun \
-    --prompt "$(tr app_prompt)" \
+    --prompt "$(i18n app_prompt)" \
     --width 760 \
     --height 620 \
     --lines 16 \
@@ -190,7 +190,7 @@ launch_app() {
 launch_app_search() {
   local query="$1"
   wofi --show drun \
-    --prompt "$(tr app_prompt)" \
+    --prompt "$(i18n app_prompt)" \
     --search "$query" \
     --width 760 \
     --height 620 \
@@ -202,95 +202,96 @@ launch_app_search() {
 
 language_menu() {
   local choice
-  choice="$(printf '%s\n%s\n%s\n' "$(tr auto_lang)" "$(tr korean)" "$(tr english)" | \
-    wofi --dmenu --prompt "$(tr language_prompt)" --width 560 --height 230 --lines 3 --insensitive --gtk-dark --no-custom-entry)" || return 0
+  choice="$(printf '%s\n%s\n%s\n' "$(i18n auto_lang)" "$(i18n korean)" "$(i18n english)" | \
+    wofi --dmenu --prompt "$(i18n language_prompt)" --width 560 --height 230 --lines 3 --insensitive --gtk-dark --no-custom-entry)" || return 0
   case "$choice" in
-    *"Auto"*|*"자동"*) write_language auto; notify "$(tr language_saved)" "$(tr auto_saved)" ;;
-    *"한국어"*) write_language ko; notify "$(tr language_saved)" "한국어" ;;
-    *"English"*) write_language en; notify "$(tr language_saved)" "English" ;;
+    *"Auto"*|*"자동"*) write_language auto; notify "$(i18n language_saved)" "$(i18n auto_saved)" ;;
+    *"한국어"*) write_language ko; notify "$(i18n language_saved)" "한국어" ;;
+    *"English"*) write_language en; notify "$(i18n language_saved)" "English" ;;
   esac
 }
 
 menu_items() {
   cat <<MENU
-󰀻  $(tr launch_app)
-󰚩  $(tr hermes)
-󰆍  $(tr scratch)
-󰋼  $(tr hud)
-󰸉  $(tr wallpaper)
-󰐥  $(tr power_menu)
-󰈈  $(tr overview)
-󰐊  $(tr transition)
-󰌾  $(tr cheatsheet)
-󰆾  $(tr opacity)
-󰉈  $(tr floating)
-󰹑  $(tr focus_floating)
-󰹒  $(tr focus_tiling)
-󰜺  $(tr move_floating)
-󰜻  $(tr move_tiling)
-󰹕  $(tr switch_focus)
-󰘖  $(tr tabbed)
-󰹖  $(tr max_column)
-󰹗  $(tr max_window)
-󰹘  $(tr center_window)
-󰹙  $(tr center_columns)
-󰁌  $(tr consume_left)
-󰁔  $(tr consume_right)
-󰹚  $(tr expel)
-󰔬  $(tr cast_window)
-󰔭  $(tr cast_monitor)
-󰅖  $(tr clear_cast)
-󰓛  $(tr stop_cast)
-󰌌  $(tr switch_keyboard)
-󰍹  $(tr screenshot)
-󰹛  $(tr quick_status)
-󰑐  $(tr reload)
-󰅶  $(tr language)
-⏻  $(tr monitors_off)
+󰀻  $(i18n launch_app)
+󰚩  $(i18n hermes)
+󰆍  $(i18n scratch)
+󰋼  $(i18n hud)
+󰸉  $(i18n wallpaper)
+󰐥  $(i18n power_menu)
+󰈈  $(i18n overview)
+󰐊  $(i18n transition)
+󰌾  $(i18n cheatsheet)
+󰆾  $(i18n opacity)
+󰉈  $(i18n floating)
+󰹑  $(i18n focus_floating)
+󰹒  $(i18n focus_tiling)
+󰜺  $(i18n move_floating)
+󰜻  $(i18n move_tiling)
+󰹕  $(i18n switch_focus)
+󰘖  $(i18n tabbed)
+󰹖  $(i18n max_column)
+󰹗  $(i18n max_window)
+󰹘  $(i18n center_window)
+󰹙  $(i18n center_columns)
+󰁌  $(i18n consume_left)
+󰁔  $(i18n consume_right)
+󰹚  $(i18n expel)
+󰔬  $(i18n cast_window)
+󰔭  $(i18n cast_monitor)
+󰅖  $(i18n clear_cast)
+󰓛  $(i18n stop_cast)
+󰌌  $(i18n switch_keyboard)
+󰍹  $(i18n screenshot)
+󰹛  $(i18n quick_status)
+󰑐  $(i18n reload)
+󰅶  $(i18n language)
+⏻  $(i18n monitors_off)
 MENU
 }
 
-choice="$(menu_items | wofi --dmenu --prompt "$(tr prompt)" --width 820 --height 700 --lines 22 --insensitive --gtk-dark)" || exit 0
+choice="$(menu_items | wofi --dmenu --prompt "$(i18n prompt)" --width 820 --height 700 --lines 22 --insensitive --gtk-dark)" || exit 0
 
 case "$choice" in
-  *"$(tr launch_app)"*) launch_app ;;
-  *"$(tr hermes)"*) "$BIN_DIR/niri-hermes-menu" ;;
-  *"$(tr scratch)"*) "$BIN_DIR/niri-scratch-terminal" ;;
-  *"$(tr hud)"*) "$BIN_DIR/niri-window-hud" ;;
-  *"$(tr wallpaper)"*) "$BIN_DIR/niri-wallpaper-shuffle" ;;
-  *"$(tr power_menu)"*) "$BIN_DIR/niri-power-menu" ;;
-  *"$(tr overview)"*) run_action "$(tr overview)" toggle-overview ;;
-  *"$(tr transition)"*) run_action "$(tr transition)" do-screen-transition --delay-ms 140 ;;
-  *"$(tr cheatsheet)"*) run_action "$(tr cheatsheet)" show-hotkey-overlay ;;
-  *"$(tr opacity)"*) run_action "$(tr opacity)" toggle-window-rule-opacity ;;
-  *"$(tr floating)"*) run_action "$(tr floating)" toggle-window-floating ;;
-  *"$(tr focus_floating)"*) run_action "$(tr focus_floating)" focus-floating ;;
-  *"$(tr focus_tiling)"*) run_action "$(tr focus_tiling)" focus-tiling ;;
-  *"$(tr move_floating)"*) run_action "$(tr move_floating)" move-window-to-floating ;;
-  *"$(tr move_tiling)"*) run_action "$(tr move_tiling)" move-window-to-tiling ;;
-  *"$(tr switch_focus)"*) run_action "$(tr switch_focus)" switch-focus-between-floating-and-tiling ;;
-  *"$(tr tabbed)"*) run_action "$(tr tabbed)" toggle-column-tabbed-display ;;
-  *"$(tr max_column)"*) run_action "$(tr max_column)" maximize-column ;;
-  *"$(tr max_window)"*) run_action "$(tr max_window)" maximize-window-to-edges ;;
-  *"$(tr center_window)"*) run_action "$(tr center_window)" center-window ;;
-  *"$(tr center_columns)"*) run_action "$(tr center_columns)" center-visible-columns ;;
-  *"$(tr consume_left)"*) run_action "$(tr consume_left)" consume-or-expel-window-left ;;
-  *"$(tr consume_right)"*) run_action "$(tr consume_right)" consume-or-expel-window-right ;;
-  *"$(tr expel)"*) run_action "$(tr expel)" expel-window-from-column ;;
-  *"$(tr cast_window)"*) run_action "$(tr cast_window)" set-dynamic-cast-window ;;
-  *"$(tr cast_monitor)"*) run_action "$(tr cast_monitor)" set-dynamic-cast-monitor ;;
-  *"$(tr clear_cast)"*) run_action "$(tr clear_cast)" clear-dynamic-cast-target ;;
-  *"$(tr stop_cast)"*) run_action "$(tr stop_cast)" stop-cast ;;
-  *"$(tr switch_keyboard)"*) run_action "$(tr switch_keyboard)" switch-layout ;;
-  *"$(tr screenshot)"*) run_action "$(tr screenshot)" screenshot ;;
-  *"$(tr quick_status)"*) show_info ;;
-  *"$(tr reload)"*) run_action "$(tr reload)" load-config-file ;;
-  *"$(tr language)"*) language_menu ;;
-  *"$(tr monitors_off)"*) run_action "$(tr monitors_off)" power-off-monitors ;;
+  *"$(i18n launch_app)"*) launch_app ;;
+  *"$(i18n hermes)"*) "$BIN_DIR/niri-hermes-menu" ;;
+  *"$(i18n scratch)"*) "$BIN_DIR/niri-scratch-terminal" ;;
+  *"$(i18n hud)"*) "$BIN_DIR/niri-window-hud" ;;
+  *"$(i18n wallpaper)"*) "$BIN_DIR/niri-wallpaper-shuffle" ;;
+  *"$(i18n power_menu)"*) "$BIN_DIR/niri-power-menu" ;;
+  *"$(i18n overview)"*) run_action "$(i18n overview)" toggle-overview ;;
+  *"$(i18n transition)"*) run_action "$(i18n transition)" do-screen-transition --delay-ms 140 ;;
+  *"$(i18n cheatsheet)"*) run_action "$(i18n cheatsheet)" show-hotkey-overlay ;;
+  *"$(i18n opacity)"*) run_action "$(i18n opacity)" toggle-window-rule-opacity ;;
+  *"$(i18n floating)"*) run_action "$(i18n floating)" toggle-window-floating ;;
+  *"$(i18n focus_floating)"*) run_action "$(i18n focus_floating)" focus-floating ;;
+  *"$(i18n focus_tiling)"*) run_action "$(i18n focus_tiling)" focus-tiling ;;
+  *"$(i18n move_floating)"*) run_action "$(i18n move_floating)" move-window-to-floating ;;
+  *"$(i18n move_tiling)"*) run_action "$(i18n move_tiling)" move-window-to-tiling ;;
+  *"$(i18n switch_focus)"*) run_action "$(i18n switch_focus)" switch-focus-between-floating-and-tiling ;;
+  *"$(i18n tabbed)"*) run_action "$(i18n tabbed)" toggle-column-tabbed-display ;;
+  *"$(i18n max_column)"*) run_action "$(i18n max_column)" maximize-column ;;
+  *"$(i18n max_window)"*) run_action "$(i18n max_window)" maximize-window-to-edges ;;
+  *"$(i18n center_window)"*) run_action "$(i18n center_window)" center-window ;;
+  *"$(i18n center_columns)"*) run_action "$(i18n center_columns)" center-visible-columns ;;
+  *"$(i18n consume_left)"*) run_action "$(i18n consume_left)" consume-or-expel-window-left ;;
+  *"$(i18n consume_right)"*) run_action "$(i18n consume_right)" consume-or-expel-window-right ;;
+  *"$(i18n expel)"*) run_action "$(i18n expel)" expel-window-from-column ;;
+  *"$(i18n cast_window)"*) run_action "$(i18n cast_window)" set-dynamic-cast-window ;;
+  *"$(i18n cast_monitor)"*) run_action "$(i18n cast_monitor)" set-dynamic-cast-monitor ;;
+  *"$(i18n clear_cast)"*) run_action "$(i18n clear_cast)" clear-dynamic-cast-target ;;
+  *"$(i18n stop_cast)"*) run_action "$(i18n stop_cast)" stop-cast ;;
+  *"$(i18n switch_keyboard)"*) run_action "$(i18n switch_keyboard)" switch-layout ;;
+  *"$(i18n screenshot)"*) run_action "$(i18n screenshot)" screenshot ;;
+  *"$(i18n quick_status)"*) show_info ;;
+  *"$(i18n reload)"*) run_action "$(i18n reload)" load-config-file ;;
+  *"$(i18n language)"*) language_menu ;;
+  *"$(i18n monitors_off)"*) run_action "$(i18n monitors_off)" power-off-monitors ;;
   *)
     if [[ -n "$choice" ]]; then
-      notify "$(tr unknown_search)" "$(tr unknown_body): $choice"
+      notify "$(i18n unknown_search)" "$(i18n unknown_body): $choice"
       launch_app_search "$choice"
     fi
     ;;
 esac
+
