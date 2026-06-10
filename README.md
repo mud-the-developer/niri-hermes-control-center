@@ -8,9 +8,11 @@ Built on a CachyOS + Niri + Rio setup, but the scripts are intentionally plain B
 
 - `ALT+SPACE` Niri Control Center via Wofi
 - Hermes Agent submenu:
-  - open interactive `hermes`
-  - ask one-shot prompts with `hermes chat -q`
+  - open interactive `hermes --tui chat` in a real terminal/PTY
+  - ask Niri-native one-shot prompts with Wofi + `hermes chat -q`
   - send focused Niri window state to Hermes
+  - run `codex exec` tasks from Wofi
+  - send Niri notifications when Hermes/Codex tasks complete or fail
   - open `hermes status`, `doctor`, `sessions`, `skills`
 - Floating scratch terminal (`MOD+SHIFT+ENTER`) with a dedicated app-id
 - Focused-window HUD (`MOD+I`)
@@ -89,9 +91,17 @@ hermes skills list
 You can override commands:
 
 ```bash
-export NIRI_HERMES_CMD=/path/to/hermes
+# Useful when Niri's startup environment does not include Hermes' venv in PATH.
+export NIRI_HERMES_CMD=/home/you/.hermes/hermes-agent/venv/bin/hermes
+
+# Result windows / one-shot output terminal.
 export NIRI_HERMES_TERMINAL=rio
+
+# Interactive Hermes terminal. Hermes TUI needs a real terminal/PTY; Alacritty is the default fallback if installed.
+export NIRI_HERMES_INTERACTIVE_TERMINAL=alacritty
 ```
+
+Why this split exists: Niri can spawn menus and commands natively, but a full interactive Hermes TUI still needs a PTY. The "native one-shot" action avoids an interactive terminal by using Wofi for input and `hermes chat -q` for execution.
 
 ## Screenshot
 
@@ -103,6 +113,25 @@ Screenshots are not committed by default. Drop your own into `assets/` if you wa
 - It does not automatically edit your Niri config.
 - Power menu asks for confirmation before logout, suspend, reboot, or shutdown.
 - No secrets are stored by these scripts.
+
+## Completion notifications
+
+The included `niri-agent-run` wrapper sends Niri desktop notifications when long-running commands finish:
+
+```bash
+niri-agent-run --title "Hermes" hermes chat -q "Summarize this repo"
+niri-agent-run --title "Codex" codex exec "Fix the failing tests"
+```
+
+Optional sound:
+
+```bash
+NIRI_AGENT_NOTIFY_SOUND=1 niri-agent-run --title "Codex" codex exec "Implement feature X"
+# or per-run:
+niri-agent-run --sound --title "Build" -- make test
+```
+
+The Hermes menu uses this wrapper for one-shot Hermes, focused-window analysis, screenshot workflow help, Codex exec, and interactive Hermes exit notifications.
 
 ## Development
 

@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage: niri-agent-run [--title TITLE] [--started] [--sound] -- COMMAND [ARGS...]
+       niri-agent-run [--title TITLE] [--started] [--sound] COMMAND [ARGS...]
+
+Run a long-lived agent command and send a desktop notification when it exits.
+Works well for Hermes, Codex, Claude Code, OpenCode, test suites, builds, etc.
+
+Examples:
+  niri-agent-run --title "Hermes" hermes chat -q "Summarize this repo"
+  niri-agent-run --title "Codex" codex exec "Fix the failing tests"
+  NIRI_AGENT_NOTIFY_SOUND=1 niri-agent-run --title "Build" -- make test
+EOF
+}
+
+title="Agent task"
+notify_started=0
+sound="${NIRI_AGENT_NOTIFY_SOUND:-0}"
+
+while (($#)); do
+  case "$1" in
+    --title)
+      shift
+      [[ $# -gt 0 ]] || { echo "--title requires an argument" >&2; exit 2; }
+      title="$1"
+      ;;
+    --started)
+      notify_started=1
+      ;;
+    --sound)
+      sound=1
+      ;;
+    --help|-h)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      break
+      ;;
+  esac
+  shift
+done
+
+if (($# == 0)); then
+  usage >&2
+  exit 2
+fi
+
+notify() {
+  local urgency="$1" summary="$2" body="${3:-}"
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send -a "Niri Agent" -u "$urgency" "$summary" "$body" >/dev/null 2>&1 || true
+  fi
+}
+
+play_sound() {
+  [[ "$sound" == "1" || "$sound" == "true" || "$sound" == "yes" ]] || return 0
+  if command -v canberra-gtk-play >/dev/null 2>&1; then
+    canberra-gtk-play -i complete >/dev/null 2>&1 || true
+  elif command -v paplay >/dev/null 2>&1; then
+    for f in \
+      /usr/share/sounds/freedesktop/stereo/complete.oga \
+      /usr/share/sounds/freedesktop/stereo/bell.oga \
+      /usr/share/sounds/freedesktop/stereo/message.oga; do
+      [[ -f "$f" ]] && { paplay "$f" >/dev/null 2>&1 || true; return 0; }
+    done
+  elif command -v pw-play >/dev/null 2>&1; then
+    for f in \
+      /usr/share/sounds/freedesktop/stereo/complete.oga \
+      /usr/share/sounds/freedesktop/stereo/bell.oga \
+      /usr/share/sounds/freedesktop/stereo/message.oga; do
+      [[ -f "$f" ]] && { pw-play "$f" >/dev/null 2>&1 || true; return 0; }
+    done
+  fi
+}
+
+format_duration() {
+  local total="$1" h m s
+  h=$((total / 3600))
+  m=$(((total % 3600) / 60))
+  s=$((total % 60))
+  if ((h > 0)); then
+    printf '%dh%02dm%02ds' "$h" "$m" "$s"
+  elif ((m > 0)); then
+    printf '%dm%02ds' "$m" "$s"
+  else
+    printf '%ds' "$s"
+  fi
+}
+
+start_epoch="$(date +%s)"
+if ((notify_started)); then
+  notify normal "▶ $title started" "$*"
+fi
+
+set +e
+"$@"
+status=$?
+set -e
+
+end_epoch="$(date +%s)"
+duration="$(format_duration "$((end_epoch - start_epoch))")"
+
+if ((status == 0)); then
+  notify normal "✅ $title completed" "exit 0 • $duration"
+  play_sound
+else
+  notify critical "❌ $title failed" "exit $status • $duration"
+  play_sound
+fi
+
+exit "$status"

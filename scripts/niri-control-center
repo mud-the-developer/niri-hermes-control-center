@@ -7,6 +7,7 @@ if [[ "${1:-}" == "--self-test" ]]; then
   command -v wofi >/dev/null
   command -v niri >/dev/null
   test -x "$BIN_DIR/niri-hermes-menu"
+  test -x "$BIN_DIR/niri-agent-run"
   test -x "$BIN_DIR/niri-scratch-terminal"
   test -x "$BIN_DIR/niri-window-hud"
   test -x "$BIN_DIR/niri-power-menu"

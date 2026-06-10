@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-TERMINAL_CMD="${NIRI_HERMES_TERMINAL:-rio}"
-HERMES_CMD="${NIRI_HERMES_CMD:-hermes}"
+TERMINAL_CMD="${NIRI_HERMES_TERMINAL:-}"
+INTERACTIVE_TERMINAL="${NIRI_HERMES_INTERACTIVE_TERMINAL:-}"
 HERMES_RIO_APP_ID="${NIRI_HERMES_RIO_APP_ID:-niri-hermes-rio}"
+HERMES_ALACRITTY_CLASS="${NIRI_HERMES_ALACRITTY_CLASS:-niri-hermes-alacritty}"
+AGENT_RUNNER="${NIRI_AGENT_RUNNER:-$HOME/.local/bin/niri-agent-run}"
 
 notify() {
   if command -v notify-send >/dev/null 2>&1; then
@@ -11,24 +13,155 @@ notify() {
   fi
 }
 
+resolve_hermes() {
+  if [[ -n "${NIRI_HERMES_CMD:-}" && -x "${NIRI_HERMES_CMD:-}" ]]; then
+    printf '%s\n' "$NIRI_HERMES_CMD"
+  elif command -v hermes >/dev/null 2>&1; then
+    command -v hermes
+  elif [[ -x "$HOME/.hermes/hermes-agent/venv/bin/hermes" ]]; then
+    printf '%s\n' "$HOME/.hermes/hermes-agent/venv/bin/hermes"
+  else
+    return 1
+  fi
+}
+
+resolve_runner() {
+  if [[ -x "$AGENT_RUNNER" ]]; then
+    printf '%s\n' "$AGENT_RUNNER"
+  elif command -v niri-agent-run >/dev/null 2>&1; then
+    command -v niri-agent-run
+  else
+    return 1
+  fi
+}
+
+resolve_codex() {
+  if [[ -n "${NIRI_CODEX_CMD:-}" && -x "${NIRI_CODEX_CMD:-}" ]]; then
+    printf '%s\n' "$NIRI_CODEX_CMD"
+  elif command -v codex >/dev/null 2>&1; then
+    command -v codex
+  else
+    return 1
+  fi
+}
+
+choose_terminal() {
+  local requested="${1:-}"
+  if [[ -n "$requested" ]] && command -v "$requested" >/dev/null 2>&1; then
+    printf '%s\n' "$requested"
+    return 0
+  fi
+  for candidate in alacritty rio ghostty xterm; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
 spawn_terminal() {
   local title="$1"
   shift
-  if [[ "$TERMINAL_CMD" == "rio" ]] && command -v rio >/dev/null 2>&1; then
-    rio --app-id "$HERMES_RIO_APP_ID" --title-placeholder "$title" -e "$@" >/dev/null 2>&1 &
-  else
-    "$TERMINAL_CMD" -e "$@" >/dev/null 2>&1 &
-  fi
+  local terminal
+  terminal="$(choose_terminal "$TERMINAL_CMD")" || {
+    notify "Hermes" "No supported terminal found"
+    return 1
+  }
+
+  case "$(basename "$terminal")" in
+    alacritty)
+      "$terminal" --class "$HERMES_ALACRITTY_CLASS,$HERMES_ALACRITTY_CLASS" --title "$title" -e "$@" >/dev/null 2>&1 &
+      ;;
+    rio)
+      "$terminal" --app-id "$HERMES_RIO_APP_ID" --title-placeholder "$title" -e "$@" >/dev/null 2>&1 &
+      ;;
+    ghostty)
+      "$terminal" --class="$HERMES_RIO_APP_ID" -e "$@" >/dev/null 2>&1 &
+      ;;
+    *)
+      "$terminal" -e "$@" >/dev/null 2>&1 &
+      ;;
+  esac
+}
+
+spawn_interactive_hermes() {
+  local hermes terminal runner
+  hermes="$(resolve_hermes)" || {
+    notify "Hermes not found" "Set NIRI_HERMES_CMD=/path/to/hermes"
+    return 1
+  }
+  runner="$(resolve_runner)" || {
+    notify "Agent runner not found" "Install niri-agent-run"
+    return 1
+  }
+  terminal="$(choose_terminal "$INTERACTIVE_TERMINAL")" || {
+    notify "Hermes" "No supported terminal found"
+    return 1
+  }
+
+  # Hermes interactive mode is a prompt_toolkit/TUI app, so it needs a real terminal/PTY.
+  # Launch through niri-agent-run so closing/exiting Hermes sends a completion notification.
+  case "$(basename "$terminal")" in
+    alacritty)
+      "$terminal" --class "$HERMES_ALACRITTY_CLASS,$HERMES_ALACRITTY_CLASS" --title "Hermes Agent" --hold -e sh -lc 'exec "$1" --title "Hermes interactive" -- "$2" --tui chat' sh "$runner" "$hermes" >/dev/null 2>&1 &
+      ;;
+    rio)
+      "$terminal" --app-id "$HERMES_RIO_APP_ID" --title-placeholder "Hermes Agent" -e sh -lc 'exec "$1" --title "Hermes interactive" -- "$2" --tui chat' sh "$runner" "$hermes" >/dev/null 2>&1 &
+      ;;
+    ghostty)
+      "$terminal" --class="$HERMES_RIO_APP_ID" -e sh -lc 'exec "$1" --title "Hermes interactive" -- "$2" --tui chat' sh "$runner" "$hermes" >/dev/null 2>&1 &
+      ;;
+    *)
+      "$terminal" -e sh -lc 'exec "$1" --title "Hermes interactive" -- "$2" --tui chat' sh "$runner" "$hermes" >/dev/null 2>&1 &
+      ;;
+  esac
+  notify "Hermes" "Interactive terminal opened via $(basename "$terminal"); exit will notify"
+}
+
+run_hermes_result_window() {
+  local title="$1"
+  local prompt="$2"
+  local hermes runner
+  hermes="$(resolve_hermes)" || {
+    notify "Hermes not found" "Set NIRI_HERMES_CMD=/path/to/hermes"
+    return 1
+  }
+  runner="$(resolve_runner)" || {
+    notify "Agent runner not found" "Install niri-agent-run"
+    return 1
+  }
+  spawn_terminal "$title" sh -lc 'printf "%s\n\n" "$3"; "$1" --title "$2" -- "$4" chat -q "$5"; printf "\nPress Enter to close..."; read -r _' sh "$runner" "$title" "$title" "$hermes" "$prompt"
+}
+
+run_codex_result_window() {
+  local task="$1"
+  local codex runner
+  codex="$(resolve_codex)" || {
+    notify "Codex not found" "Install codex CLI or set NIRI_CODEX_CMD"
+    return 1
+  }
+  runner="$(resolve_runner)" || {
+    notify "Agent runner not found" "Install niri-agent-run"
+    return 1
+  }
+  spawn_terminal "Codex exec" sh -lc 'printf "%s\n\n" "Codex task: $4"; "$1" --title "Codex exec" -- "$2" exec "$4"; printf "\nPress Enter to close..."; read -r _' sh "$runner" "$codex" "Codex exec" "$task"
+  notify "Codex" "Task started; completion notification enabled"
 }
 
 ask_prompt() {
   printf '' | wofi --dmenu --prompt "Ask Hermes" --width 760 --height 160 --lines 1 --exec-search --gtk-dark || true
 }
 
-choice="$(cat <<'MENU' | wofi --dmenu --prompt 'Hermes Agent' --width 680 --height 420 --lines 10 --insensitive --gtk-dark --no-custom-entry
-󰚩  Open interactive Hermes
-󰭹  Ask Hermes one-shot prompt
-󰈈  Ask Hermes about focused Niri window
+codex_prompt() {
+  printf '' | wofi --dmenu --prompt "Codex exec task" --width 820 --height 160 --lines 1 --exec-search --gtk-dark || true
+}
+
+choice="$(cat <<'MENU' | wofi --dmenu --prompt 'Hermes Agent' --width 740 --height 480 --lines 11 --insensitive --gtk-dark --no-custom-entry
+󰚩  Open interactive Hermes terminal + completion notification
+󰭹  Ask Hermes native one-shot prompt + completion notification
+󰈈  Ask Hermes about focused Niri window + completion notification
+󰣐  Run Codex exec with completion notification
 󰍹  Ask Hermes to explain screenshot workflow
 󰑐  Hermes status
 󰒲  Hermes doctor
@@ -38,35 +171,43 @@ MENU
 )" || exit 0
 
 case "$choice" in
-  *"interactive"*)
-    spawn_terminal "Hermes" "$HERMES_CMD"
-    notify "Hermes" "Interactive session opened"
+  *"interactive Hermes terminal"*)
+    spawn_interactive_hermes
     ;;
-  *"one-shot"*)
+  *"native one-shot"*)
     prompt="$(ask_prompt)"
     [[ -z "$prompt" ]] && exit 0
-    spawn_terminal "Hermes Ask" sh -lc "printf '%s\n\n' 'Hermes one-shot'; ${HERMES_CMD@Q} chat -q \"\$1\"; printf '\nPress Enter to close...'; read _" sh "$prompt"
-    notify "Hermes" "Question sent"
+    run_hermes_result_window "Hermes one-shot" "$prompt"
+    notify "Hermes" "Question sent; completion notification enabled"
     ;;
   *"focused Niri window"*)
     info="$(niri msg focused-window 2>/dev/null || true)"
     [[ -z "$info" ]] && info="No focused window detected."
-    spawn_terminal "Hermes Window" sh -lc "printf '%s\n\n' 'Focused window context sent to Hermes'; ${HERMES_CMD@Q} chat -q \"Explain this Niri focused-window state and suggest useful next window-management action:\n\n\$1\"; printf '\nPress Enter to close...'; read _" sh "$info"
-    notify "Hermes" "Focused window sent"
+    run_hermes_result_window "Hermes focused window" "Explain this Niri focused-window state and suggest useful next window-management action:\n\n$info"
+    notify "Hermes" "Focused window sent; completion notification enabled"
+    ;;
+  *"Codex exec"*)
+    task="$(codex_prompt)"
+    [[ -z "$task" ]] && exit 0
+    run_codex_result_window "$task"
     ;;
   *"screenshot workflow"*)
-    spawn_terminal "Hermes Screenshot" sh -lc "${HERMES_CMD@Q} chat -q 'For my Niri Wayland desktop, suggest a polished screenshot workflow using niri screenshot actions, grim, wl-copy, slurp/swappy if installed, and explain required packages.'; printf '\nPress Enter to close...'; read _"
+    run_hermes_result_window "Hermes screenshot workflow" "For my Niri Wayland desktop, suggest a polished screenshot workflow using niri screenshot actions, grim, wl-copy, slurp/swappy if installed, and explain required packages."
     ;;
   *"Hermes status"*)
-    spawn_terminal "Hermes Status" sh -lc "${HERMES_CMD@Q} status --all 2>/dev/null || ${HERMES_CMD@Q} status; printf '\nPress Enter to close...'; read _"
+    hermes="$(resolve_hermes)" || { notify "Hermes not found" "Set NIRI_HERMES_CMD=/path/to/hermes"; exit 1; }
+    spawn_terminal "Hermes Status" sh -lc '"$1" status --all 2>/dev/null || "$1" status; printf "\nPress Enter to close..."; read -r _' sh "$hermes"
     ;;
   *"Hermes doctor"*)
-    spawn_terminal "Hermes Doctor" sh -lc "${HERMES_CMD@Q} doctor; printf '\nPress Enter to close...'; read _"
+    hermes="$(resolve_hermes)" || { notify "Hermes not found" "Set NIRI_HERMES_CMD=/path/to/hermes"; exit 1; }
+    spawn_terminal "Hermes Doctor" sh -lc '"$1" doctor; printf "\nPress Enter to close..."; read -r _' sh "$hermes"
     ;;
   *"sessions"*)
-    spawn_terminal "Hermes Sessions" sh -lc "${HERMES_CMD@Q} sessions list; printf '\nPress Enter to close...'; read _"
+    hermes="$(resolve_hermes)" || { notify "Hermes not found" "Set NIRI_HERMES_CMD=/path/to/hermes"; exit 1; }
+    spawn_terminal "Hermes Sessions" sh -lc '"$1" sessions list; printf "\nPress Enter to close..."; read -r _' sh "$hermes"
     ;;
   *"skills"*)
-    spawn_terminal "Hermes Skills" sh -lc "${HERMES_CMD@Q} skills list; printf '\nPress Enter to close...'; read _"
+    hermes="$(resolve_hermes)" || { notify "Hermes not found" "Set NIRI_HERMES_CMD=/path/to/hermes"; exit 1; }
+    spawn_terminal "Hermes Skills" sh -lc '"$1" skills list; printf "\nPress Enter to close..."; read -r _' sh "$hermes"
     ;;
 esac
